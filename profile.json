@@ -1,0 +1,517 @@
+{
+  "version": 5,
+  "exportedAt": "2026-11-10T18:12:36.003Z",
+  "data": {
+    "base": {
+      "dex": 636,
+      "str": 30,
+      "attack": 0,
+      "dexPct": 0,
+      "strPct": 0,
+      "atkPct": 0,
+      "damage": 0,
+      "boss": 0,
+      "critRate": 5,
+      "critDamage": 0,
+      "critMax": 0,
+      "ied": 0,
+      "finalDamage": 0,
+      "weaponConstant": 1.34,
+      "weaponMastery": 84,
+      "levelMultiplier": 1
+    },
+    "equipment": [
+      {
+        "name": "武器",
+        "enabled": true,
+        "attack": 113,
+        "atkPct": 12,
+        "slot": "weapon",
+        "dex": 0,
+        "str": 0,
+        "dexPct": 0,
+        "strPct": 0,
+        "damage": 0,
+        "boss": 0,
+        "critRate": 0,
+        "critDamage": 0,
+        "critMax": 0,
+        "ied": 0,
+        "finalDamage": 0,
+        "allStatPct": 0,
+        "legacyDetails": {
+          "scroll": {},
+          "potential": {},
+          "additional": {}
+        },
+        "mergedStats": true
+      },
+      {
+        "name": "套服",
+        "enabled": true,
+        "str": 32,
+        "dex": 29,
+        "dexPct": 6,
+        "slot": "body",
+        "attack": 0,
+        "strPct": 0,
+        "atkPct": 0,
+        "damage": 0,
+        "boss": 0,
+        "critRate": 0,
+        "critDamage": 0,
+        "critMax": 0,
+        "ied": 0,
+        "finalDamage": 0,
+        "allStatPct": 0,
+        "legacyDetails": {
+          "scroll": {},
+          "potential": {},
+          "additional": {}
+        },
+        "mergedStats": true
+      },
+      {
+        "name": "手套",
+        "enabled": true,
+        "attack": 3,
+        "dexPct": 4,
+        "dex": 36,
+        "str": 6,
+        "slot": "gloves",
+        "strPct": 0,
+        "atkPct": 0,
+        "damage": 0,
+        "boss": 0,
+        "critRate": 0,
+        "critDamage": 0,
+        "critMax": 0,
+        "ied": 0,
+        "finalDamage": 0,
+        "allStatPct": 0,
+        "legacyDetails": {
+          "scroll": {},
+          "potential": {},
+          "additional": {}
+        },
+        "mergedStats": true
+      },
+      {
+        "name": "披風",
+        "enabled": true,
+        "str": 1,
+        "dex": 28,
+        "dexPct": 10,
+        "slot": "cape",
+        "attack": 0,
+        "strPct": 0,
+        "atkPct": 0,
+        "damage": 0,
+        "boss": 0,
+        "critRate": 0,
+        "critDamage": 0,
+        "critMax": 0,
+        "ied": 0,
+        "finalDamage": 0,
+        "allStatPct": 0,
+        "legacyDetails": {
+          "scroll": {},
+          "potential": {},
+          "additional": {}
+        },
+        "mergedStats": true
+      },
+      {
+        "name": "鞋子",
+        "enabled": true,
+        "str": 5,
+        "dex": 26,
+        "dexPct": 6,
+        "slot": "shoes",
+        "attack": 0,
+        "strPct": 0,
+        "atkPct": 0,
+        "damage": 0,
+        "boss": 0,
+        "critRate": 0,
+        "critDamage": 0,
+        "critMax": 0,
+        "ied": 0,
+        "finalDamage": 0,
+        "allStatPct": 0,
+        "legacyDetails": {
+          "scroll": {},
+          "potential": {},
+          "additional": {}
+        },
+        "mergedStats": true
+      },
+      {
+        "slot": "hat",
+        "name": "",
+        "enabled": true,
+        "dex": 36,
+        "str": 12,
+        "attack": 0,
+        "dexPct": 6,
+        "strPct": 0,
+        "atkPct": 0,
+        "damage": 0,
+        "boss": 0,
+        "critRate": 0,
+        "critDamage": 0,
+        "critMax": 0,
+        "ied": 0,
+        "finalDamage": 0,
+        "allStatPct": 0,
+        "legacyDetails": {
+          "scroll": {},
+          "potential": {},
+          "additional": {}
+        },
+        "mergedStats": true
+      },
+      {
+        "slot": "badge",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "attack": 1
+      },
+      {
+        "slot": "medal",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "str": 3,
+        "dex": 3,
+        "attack": 2
+      },
+      {
+        "slot": "face",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "str": 9,
+        "dexPct": 8,
+        "attack": 2,
+        "dex": 3
+      },
+      {
+        "slot": "eye",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true
+      },
+      {
+        "slot": "pants",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true
+      },
+      {
+        "slot": "necklace",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "attack": 4,
+        "dex": 30,
+        "str": 28,
+        "dexPct": 15
+      },
+      {
+        "slot": "belt",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "dex": 17,
+        "str": 12,
+        "dexPct": 6
+      },
+      {
+        "slot": "heart",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "attack": 9,
+        "str": 5
+      },
+      {
+        "slot": "ring1",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "dex": 4
+      },
+      {
+        "slot": "ring2",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "attack": 5
+      },
+      {
+        "slot": "ring3",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "str": 4,
+        "attack": 4
+      },
+      {
+        "slot": "ring4",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "str": 2,
+        "dex": 2,
+        "attack": 1
+      },
+      {
+        "slot": "earring",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "dex": 11,
+        "str": 5,
+        "dexPct": 10
+      },
+      {
+        "slot": "shoulder",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "attack": 4,
+        "dex": 8,
+        "dexPct": 6,
+        "strPct": 3
+      },
+      {
+        "slot": "secondary",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "attack": 35,
+        "dex": 4,
+        "allStatPct": 4,
+        "atkPct": 12
+      },
+      {
+        "slot": "totem",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true
+      },
+      {
+        "slot": "pet1",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "attack": 4
+      },
+      {
+        "slot": "pet2",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true
+      },
+      {
+        "slot": "pet3",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true
+      },
+      {
+        "slot": "set",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "str": 24,
+        "dex": 24,
+        "attack": 10,
+        "ied": 30
+      },
+      {
+        "slot": "pocket",
+        "name": "",
+        "enabled": true,
+        "mergedStats": true,
+        "str": 3,
+        "dex": 3,
+        "attack": 1
+      }
+    ],
+    "links": [
+      {
+        "id": "atk",
+        "level": 5
+      },
+      {
+        "id": "none",
+        "level": 1
+      },
+      {
+        "id": "none",
+        "level": 1
+      }
+    ],
+    "buffs": [
+      {
+        "name": "領導力",
+        "phase": "always",
+        "enabled": true,
+        "ied": 3
+      }
+    ],
+    "boss": {
+      "pdr": 100,
+      "taken": 0,
+      "partyIed": 0
+    },
+    "skill": {
+      "aStages": [
+        250,
+        260,
+        280,
+        760
+      ],
+      "aCharge": [
+        70,
+        70,
+        70,
+        100
+      ],
+      "bComboBonus": 45,
+      "bCharge": 50,
+      "bComboCharge": 100,
+      "aTime": 1.392,
+      "bTime": 0.64,
+      "abTime": 1.953,
+      "chargeFactor": 1.5,
+      "chargeMax": 12000,
+      "mark": 30,
+      "markMode": "off",
+      "b1": 160,
+      "b1hits": 2,
+      "b2": 205,
+      "b2hits": 3,
+      "snipe": 1695,
+      "snipeHits": 4,
+      "ult": 280,
+      "ultHits": 3,
+      "ultShots": 38,
+      "flower": 195,
+      "flowerHits": 8,
+      "flowerBonus": 135,
+      "flowerShots": 11,
+      "dot": 240,
+      "dotTicks": 8.5,
+      "burstTime": 20,
+      "multiplierSource": "levels"
+    },
+    "calc": {
+      "finish": "full",
+      "calibScale": 1.0307343689372515,
+      "panelMax": 14035,
+      "panelMin": 10105,
+      "calibMethod": "panel",
+      "measuredDamage": 0,
+      "measuredSkillPct": 195,
+      "measuredCrit": "normal",
+      "calibSet": true,
+      "fightSeconds": 60,
+      "rangeStat": "attack",
+      "rangeAmount": 0,
+      "recommendRotation": "ab"
+    },
+    "baseline": null,
+    "gearNote": "示範基礎數值，非本人實際裝備",
+    "equipmentSets": [],
+    "equipmentSchema": 2,
+    "jobSkillEffects": [
+      {
+        "name": "花力強化(青)",
+        "phase": "always",
+        "enabled": true,
+        "attack": 10
+      },
+      {
+        "name": "花力強化(黃)",
+        "phase": "always",
+        "enabled": true,
+        "ied": 20
+      },
+      {
+        "name": "體能訓練",
+        "phase": "always",
+        "enabled": true,
+        "str": 30,
+        "dex": 30
+      },
+      {
+        "name": "花力強化(朱)",
+        "phase": "always",
+        "enabled": true,
+        "critRate": 20
+      },
+      {
+        "name": "火繩槍劍專家",
+        "phase": "always",
+        "enabled": true,
+        "attack": 28
+      },
+      {
+        "name": "殘花",
+        "phase": "always",
+        "enabled": true,
+        "attack": 12
+      },
+      {
+        "name": "花力強化(紅)",
+        "phase": "always",
+        "enabled": false
+      },
+      {
+        "name": "復仇之心",
+        "phase": "always",
+        "enabled": true,
+        "attack": 20
+      },
+      {
+        "name": "花力強化(1~4轉)",
+        "phase": "burst",
+        "enabled": true,
+        "attack": 20,
+        "damage": 20
+      },
+      {
+        "name": "精靈的祝福",
+        "phase": "always",
+        "enabled": true,
+        "attack": 18,
+        "atkPct": 0,
+        "dex": 0,
+        "str": 0,
+        "damage": 0,
+        "boss": 0,
+        "critRate": 0,
+        "critDamage": 0,
+        "ied": 0,
+        "finalDamage": 0
+      }
+    ],
+    "jobSkillLevels": {
+      "花力強化(青)": "5",
+      "閃雷": "20",
+      "火繩槍劍專家": "30",
+      "殘花": "10",
+      "花力強化(紅)": "1",
+      "點花": "1",
+      "奧義．爆": "1",
+      "花力開放": "1",
+      "黎明勇士": "1",
+      "火繩槍劍秘傳": "1"
+    },
+    "jobSkillToggles": {}
+  }
+}
