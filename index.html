@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#111c2b"/>
+<title>菖蒲打王實驗室 v4｜最小最大表攻・充能・爆發模擬器</title>
+<style>
+:root{--bg:#0a1220;--panel:#101c2d;--panel2:#16263b;--stroke:#263951;--text:#edf4fd;--muted:#9eb0c6;--pink:#fb6eb3;--pinkbg:#40243e;--blue:#7bc7ff;--green:#75dcc0;--yellow:#ffd68c;--red:#ff958f;--shadow:0 8px 34px rgba(0,0,0,.16)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 75% -20%,#20375a 0,transparent 40%),var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Noto Sans TC','Microsoft JhengHei',sans-serif;font-size:14px;line-height:1.6}button,input,select{font:inherit}button{cursor:pointer}a{color:var(--blue)}.app{min-height:100vh;display:grid;grid-template-columns:244px minmax(0,1fr)}aside{position:sticky;top:0;height:100vh;padding:26px 15px;background:#0d1727;border-right:1px solid var(--stroke);display:flex;flex-direction:column;gap:18px;z-index:10}.brand{padding:6px 12px 20px;border-bottom:1px solid var(--stroke)}.brand .mark{display:inline-flex;width:38px;height:38px;align-items:center;justify-content:center;border-radius:12px;background:var(--pinkbg);font-size:23px;float:left;margin-right:10px}.brand strong{display:block;font-size:18px;letter-spacing:.4px}.brand small{color:var(--muted)}nav{display:grid;gap:4px}.navbtn{display:flex;align-items:center;gap:10px;border:0;border-radius:12px;color:#b6c5d7;background:transparent;text-align:left;padding:11px 12px}.navbtn:hover,.navbtn.active{color:#fff;background:#1c2c44}.navbtn.active{box-shadow:inset 3px 0 0 var(--pink)}.navbtn .emoji{width:24px;text-align:center;font-size:17px}.sidefoot{margin-top:auto;padding:14px 12px;border:1px solid var(--stroke);border-radius:12px;background:#122136;color:var(--muted);font-size:12px}.sidefoot strong{color:var(--green)}main{max-width:1500px;width:100%;margin:0 auto;padding:32px 40px 70px;min-width:0}.topline{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:24px}.eyebrow{color:var(--pink);text-transform:uppercase;letter-spacing:2px;font-size:11px;font-weight:800}.topline h1{font-size:clamp(25px,3vw,37px);margin:3px 0 7px;line-height:1.18;font-weight:800}.topline p{color:var(--muted);margin:0;max-width:760px}.tools{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.btn{border:1px solid var(--stroke);background:#21314a;color:#eef5fd;border-radius:10px;padding:9px 13px;transition:.15s}.btn:hover{filter:brightness(1.16)}.btn.primary{background:linear-gradient(110deg,#d74a97,#9956ce);border-color:transparent;font-weight:700}.btn.subtle{background:transparent}.btn.danger{color:#ffafa5}.btn.sm{padding:5px 8px;font-size:12px}.pill{display:inline-flex;align-items:center;border:1px solid #76506d;color:#ffc7e7;background:rgba(251,110,179,.07);padding:2px 9px;border-radius:100px;font-size:11px;white-space:nowrap}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.metric{border:1px solid var(--stroke);border-radius:15px;background:linear-gradient(155deg,#18283f,#101c2d);padding:17px 18px;min-width:0}.metric label{color:var(--muted);font-size:12px;display:block}.metric strong{display:block;margin:5px 0 2px;font-size:clamp(19px,2.3vw,28px);letter-spacing:-.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.metric em{font-style:normal;font-size:12px;color:var(--green)}.panel{border:1px solid var(--stroke);border-radius:17px;background:var(--panel);padding:24px;margin-top:18px;box-shadow:var(--shadow)}.panel h2{font-size:19px;margin:0 0 7px}.panel h3{font-size:15px;margin:14px 0 9px}.desc{color:var(--muted);font-size:13px;margin:4px 0 18px}.notice{display:flex;gap:10px;background:rgba(255,214,140,.075);border:1px solid rgba(255,214,140,.27);border-radius:12px;padding:11px 14px;color:#f6dfb5;margin:12px 0;font-size:13px}.notice.info{background:rgba(123,199,255,.06);border-color:#315775;color:#b6d8f7}.notice.success{background:rgba(117,220,192,.07);border-color:#2f6c61;color:#a6eedb}.flex{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.space{justify-content:space-between}.small{font-size:12px}.muted{color:var(--muted)}.callout{padding:13px 16px;background:#14243b;border-radius:12px}.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:13px 14px}.field{display:flex;flex-direction:column;gap:5px;min-width:0}.field span{color:#c3d1e3;font-size:12px}.field input,.field select{width:100%;min-width:0;outline:none;color:var(--text);background:#0b1729;border:1px solid #344760;border-radius:9px;padding:10px 11px}.field input:focus,.field select:focus,.tdinput:focus{border-color:var(--pink);box-shadow:0 0 0 2px rgba(251,110,179,.12)}option{background:#13243a}.toggle{display:flex;align-items:center;gap:9px;color:#cbd9ea}.toggle input{accent-color:#ef65b3;width:16px;height:16px}.sep{height:1px;background:var(--stroke);margin:19px 0}.tablewrap{max-width:100%;overflow:auto;border-radius:12px;border:1px solid var(--stroke)}table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}th,td{padding:12px 13px;text-align:right;border-bottom:1px solid #29394d;font-variant-numeric:tabular-nums}th{background:#192a41;font-size:12px;color:#b5c7dc;font-weight:650;position:sticky;top:0}td:first-child,th:first-child{text-align:left}tbody tr:hover{background:#19273b}tbody tr:last-child td{border-bottom:0}td.good{color:var(--green);font-weight:800}td.focus{color:var(--pink);font-weight:800}.tdinput{color:var(--text);background:#0a1727;border:1px solid #33465d;border-radius:7px;width:75px;padding:7px;outline:none;text-align:right}.tdinput.name{width:160px;text-align:left}.tdinput.wide{width:108px}.no-outline{border:0;background:none;color:var(--text)}.mini-select{background:#0c1728;border:1px solid var(--stroke);border-radius:7px;color:var(--text);padding:7px}.chartrow{display:grid;grid-template-columns:105px 1fr 128px;gap:12px;align-items:center;margin:13px 0;font-size:13px}.track{height:14px;border-radius:99px;background:#25374e;overflow:hidden}.bar{height:100%;border-radius:99px;background:#6a9bd5}.bar.best{background:linear-gradient(90deg,#cc62ba,#ff91bd)}.bar.a{background:#76bce6}.bar.b{background:#80c9b9}.bar.ab{background:#f081b5}.right{text-align:right}.resultTop{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}.statline{display:flex;justify-content:space-between;gap:8px;margin:6px 0;padding-bottom:5px;border-bottom:1px dashed #2b4057}.statline:last-child{border-bottom:none}.statline b{font-variant-numeric:tabular-nums}.actionline{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 18px}.step{display:flex;gap:12px;align-items:flex-start;margin:14px 0}.circle{width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#283f60;border-radius:50%;color:#d7efff;font-weight:800;font-size:12px}.chip{display:inline-block;padding:2px 9px;border-radius:99px;background:#253950;color:#b9d9f6;font-size:12px}.linkcards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.linkcard{border:1px solid #33495f;border-radius:13px;padding:14px;background:#132339}.linkcard select{width:100%}.foot{margin-top:25px;color:#8499b2;font-size:12px}.foot a{color:#adcfff}.kicker{color:var(--green);font-weight:750;font-size:12px}.major{font-size:25px;font-weight:850;color:#eaf8ff}.badge-pink{font-size:11px;color:#ffc6e6;background:#4e2849;padding:3px 9px;border-radius:30px}.hidden{display:none!important}#toast{position:fixed;bottom:22px;right:23px;z-index:999;max-width:340px;display:none;background:#234139;border:1px solid #4c8a76;color:white;padding:12px 16px;border-radius:11px;box-shadow:var(--shadow)}.full{grid-column:1/-1}.formula{background:#0b1728;border:1px solid #2a425d;border-radius:10px;padding:12px;color:#d3e6f8;font-family:ui-monospace,Consolas,monospace;font-size:12px;white-space:normal;overflow-wrap:anywhere}.hero{border:1px solid #623451;background:linear-gradient(120deg,#34243f,#182b48);padding:18px 20px;border-radius:15px;margin-bottom:18px}.hero b{color:#ffc9e8}.rowcheck{accent-color:var(--pink)}@media(max-width:1040px){.app{grid-template-columns:1fr}aside{height:auto;position:sticky;top:0;padding:9px 14px;flex-direction:row;align-items:center;gap:9px;overflow-x:auto}.brand{padding:0 10px 0 0;border:0;flex-shrink:0}.brand .mark{display:none}.brand small,.sidefoot{display:none}.brand strong{font-size:15px;white-space:nowrap}nav{display:flex;gap:1px}.navbtn{white-space:nowrap;padding:9px}.navbtn .emoji{display:none}main{padding:26px 22px 48px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:640px){main{padding:18px 13px 45px}.topline{display:block}.topline h1{font-size:25px}.tools{justify-content:flex-start;margin-top:15px}.panel{padding:17px}.grid,.two,.three,.resultTop,.linkcards{grid-template-columns:1fr}.chartrow{grid-template-columns:72px 1fr 90px;gap:8px}.metric strong{font-size:24px}.fields{grid-template-columns:repeat(2,minmax(0,1fr))}.topline p{font-size:13px}.linkcards{gap:10px}}@media print{aside,.tools,.actionline,.btn{display:none!important}.app{display:block}main{padding:0}body{background:white;color:black}.panel,.metric{background:white;color:black;border-color:#bbb}.desc,.muted{color:#666}th{background:#ddd;color:black}td{border-color:#ccc}.track{background:#eee}}
+
+/* v4: 面板預估與自訂排序 */
+.mini-range{display:flex;align-items:center;gap:22px;flex-wrap:wrap;border:1px solid #315778;border-radius:14px;padding:12px 17px;background:linear-gradient(110deg,#1c314d,#17283f);margin:0 0 16px}
+.mini-range>div{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.mini-range strong{font-size:18px;color:#e5f6ff;font-variant-numeric:tabular-nums}.mini-range small{color:var(--muted)}
+.range-value{padding:11px 0 18px}.range-value>span{font-size:clamp(23px,4vw,35px);font-weight:850;color:#e2f4ff;font-variant-numeric:tabular-nums;letter-spacing:-.5px;display:block}.range-value small{color:var(--muted);font-size:12px}
+.order-cell{white-space:nowrap;text-align:left;padding:7px 8px}.handle{border:1px solid var(--stroke);border-radius:7px;background:#1c3551;color:#bfe3ff;padding:5px 9px;margin-right:5px;cursor:grab;touch-action:none}.handle:active{cursor:grabbing}.order-btn{border:1px solid var(--stroke);border-radius:7px;background:#192b40;color:#e8efff;padding:5px 8px;margin:0 1px}.order-btn:disabled{opacity:.26;cursor:not-allowed}tr.drag-target{outline:2px dashed var(--pink);outline-offset:-3px;background:#283149!important}.mini-range .muted{font-size:11px}
+@media(max-width:640px){.mini-range{gap:8px;padding:10px 12px}.mini-range>div{width:100%;justify-content:space-between}.mini-range strong{font-size:16px}}
+
+.gear-table{table-layout:fixed;width:100%;white-space:normal}.gear-table th,.gear-table td{text-align:left;padding:8px 10px;overflow-wrap:anywhere}.gear-table th:nth-child(1){width:155px}.gear-table th:nth-child(2){width:55px}.gear-table th:nth-child(3){width:auto}.gear-table th:last-child{width:65px}.gear-summary{font-size:12px;color:var(--muted)}.gear-name{border:0;background:none;color:var(--blue);padding:0;text-align:left}.gear-table small{display:block}.gear-dialog{width:min(760px,94vw);max-height:90vh;overflow-y:auto;background:var(--panel);color:var(--text);border:1px solid var(--stroke);border-radius:16px;padding:22px}.gear-dialog::backdrop{background:#000a}.gear-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.gear-dialog h2{margin:0 0 10px}@media(max-width:640px){.gear-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.gear-table th:nth-child(1){width:95px}.gear-table th:nth-child(2){width:40px}.gear-table th:last-child{width:60px}.gear-table th,.gear-table td{padding:6px 3px}.gear-summary{font-size:10px}}
+</style>
+</head>
+<body>
+<div class="app"><aside><div class="brand"><span class="mark">🌸</span><strong>菖蒲打王實驗室</strong><small>MapleStar / 單體 Boss 模擬器</small></div><nav id="nav"></nav><div class="sidefoot"><strong>本機自動儲存 · 同時支援 JSON 備份</strong><div>資料只保存在此瀏覽器，不會上傳伺服器。</div><div style="margin-top:8px">模型：v4 · 自行調整武器係數與熟練度</div></div></aside>
+<main><div class="topline"><div><div class="eyebrow">Ayame damage laboratory</div><h1 id="pageTitle">傷害比較總覽</h1><p id="pageDesc">比較 A 四連擊、B 花尖、A+B 接技的充能時間、爆發輸出與長期 DPS。</p></div><div class="tools"><button class="btn" data-action="export">匯出設定 JSON</button><button class="btn" data-action="import">匯入設定</button><button class="btn subtle" data-action="print">列印結果</button></div></div><div class="mini-range" id="miniRange"><div><span class="muted">預測常態表攻</span><strong id="header-range">—</strong></div><div><span class="muted">爆發 Buff 後表攻</span><strong id="header-burst-range">—</strong></div><small>由角色屬性、裝備、傳授、Buff 及熟練度即時估算，非校正值</small></div><section id="view"></section><footer class="foot">本工具非楓星官方，技能資料依你提供的遊戲截圖與影片整理。技能、增益及 Boss 傷害機制仍可能與估算模型不同；建議使用「實測校正」調整輸出。<br>參考：<a href="https://tw.maplestar.io/news/updates/449762e1-fa59-4df9-ae08-15b95db6c236" target="_blank" rel="noopener">楓星官方更新</a> · <a href="https://forum.gamer.com.tw/Co.php?bPage=0&bsn=79354&sn=86802&subbsn=14" target="_blank" rel="noopener">傳授技能社群資料</a> · <a href="https://maplestorywiki.net/w/Damage_Formula" target="_blank" rel="noopener">一般楓之谷傷害公式參考</a></footer></main></div>
+<input id="importfile" type="file" accept=".json,application/json" hidden><div id="toast"></div>
+<script>
+'use strict';
+const VERSION=5, KEY='ayame_lab_20261103_v2'; // 同一儲存鍵，保留 v3 設定
+const NAV=[['dashboard','📊','傷害總覽','傷害比較總覽','比較 A、B、A+B 的完整打王循環與傷害效率。'],['character','🎯','角色能力','角色基本能力','填入菖蒲的 DEX、STR、攻擊力、爆擊及其他常態能力。'],['equipment','🛡️','裝備配裝','裝備能力與套裝','逐件編輯裝備、潛能、卷軸及套裝加成，支援匯入參考套裝。'],['links','🔗','傳授技能','傳授技能配置','最多選擇三個傳授，依等級自動加入屬性。'],['jobSkills','📚','職業技能','菖蒲職業技能','依轉職階段查看技能。'],['buffs','🧪','藥水・Buff','增益與消耗品','加入常駐或僅爆發期間啟用的能力，並可快速切換。'],['skills','⚔️','技能與循環','技能倍率與動作時間','你錄影量測的出招速度與滿等技能倍率都可以修改。'],['boss','👑','Boss 與表攻','Boss 防禦與表攻預測','調整防禦率，核對預測最小與最大表攻，不使用校正係數。'],['method','📖','說明與驗證','使用說明與計算假設','了解公式、限制、版本差異，以及如何讓數字更準。']];
+const LINK={none:{name:'不裝備',effects:[]},boss:{name:'英雄／劍豪・Boss 傷害',effects:[{boss:2},{boss:4},{boss:6},{boss:8},{boss:10}]},ied:{name:'拳霸／重砲指揮官・無視防禦',effects:[{ied:3},{ied:6},{ied:9},{ied:12},{ied:15}]},atk:{name:'槍神／機甲戰神・物攻%',effects:[{atkPct:1},{atkPct:3},{atkPct:5},{atkPct:7},{atkPct:10}]},hpAtk:{name:'黑騎／狂狼勇士・物攻%',effects:[{atkPct:1},{atkPct:2},{atkPct:3},{atkPct:4},{atkPct:5}]},crit:{name:'箭神／狂豹獵人・爆率＋傷害',effects:[{critRate:1,damage:1},{critRate:2,damage:2},{critRate:4,damage:3},{critRate:6,damage:4},{critRate:8,damage:5}]},critMax:{name:'神射手／菖蒲・最大爆傷＋傷害',effects:[{critMax:1,damage:1},{critMax:3,damage:1},{critMax:5,damage:2},{critMax:7,damage:2},{critMax:9,damage:3}]}};
+const STATS=['dex','str','attack','dexPct','strPct','atkPct','damage','boss','critRate','critDamage','critMax','ied','finalDamage'];
+const STAT_LABEL={dex:'DEX',str:'STR',attack:'物攻 +',dexPct:'DEX %',strPct:'STR %',atkPct:'物攻 %',damage:'傷害 %',boss:'Boss %',critRate:'爆擊率 %',critDamage:'平均額外爆傷 %',critMax:'最大爆傷 %',ied:'無視防禦 %',finalDamage:'最終傷害 %'};
+const sampleGear=[
+{name:'俠客圖斯帽子',dex:22,str:27},
+{name:'俠客圖斯大衣',dex:32,str:29,attack:2},
+{name:'俠客圖斯鞋子',dex:13,str:15,attack:2},
+{name:'俠客圖斯手套',dex:16,str:18,attack:4},
+{name:'俠客圖斯船長披風',dex:6,str:7},
+{name:'俠客圖斯刺刀',dex:39,str:19,attack:101},
+{name:'俠客圖斯套裝 4件效果',attack:15},
+{name:'俠客圖斯套裝 5件效果',dex:20,str:20},
+{name:'俠客圖斯套裝 6件效果',attack:30,boss:30}];
+const INITIAL={
+ base:{dex:620,str:80,attack:100,dexPct:0,strPct:0,atkPct:0,damage:20,boss:40,critRate:50,critDamage:0,critMax:0,ied:65,finalDamage:0,weaponConstant:1.3,weaponMastery:60,levelMultiplier:1},
+ equipment:[],links:[{id:'none',level:1},{id:'none',level:1},{id:'none',level:1}],
+ buffs:[{name:'花力全開能力增益（請自行填）',phase:'burst',enabled:false,attack:0,atkPct:0,dex:0,str:0,damage:0,boss:0,critRate:0,critDamage:0,ied:0,finalDamage:0}],
+ boss:{pdr:100,taken:0,partyIed:0},
+ skill:{aStages:[250,260,280,760],aCharge:[70,70,70,100],bComboBonus:45,bCharge:50,bComboCharge:100,aTime:1.392,bTime:0.640,abTime:1.953,chargeFactor:1.5,chargeMax:12000,mark:30,markMode:'off'},
+ calc:{finish:'full',calibScale:1,panelMax:0,panelMin:0,calibMethod:'none',measuredDamage:0,measuredSkillPct:195,measuredCrit:'normal',calibSet:false},baseline:null,gearNote:'示範基礎數值，非本人實際裝備'};
+
+const GEAR_SLOTS=[['badge','徽章'],['medal','勳章'],['pocket','口袋道具'],['cape','披風'],['gloves','手套'],['hat','帽子'],['face','臉飾'],['eye','眼飾'],['body','上衣／套服'],['pants','褲裙'],['necklace','項鍊'],['belt','腰帶'],['shoes','鞋子'],['heart','機器人心臟'],['ring1','戒指 1'],['ring2','戒指 2'],['ring3','戒指 3'],['ring4','戒指 4'],['earring','耳環'],['shoulder','肩膀'],['weapon','主武器'],['secondary','副武器'],['totem','圖騰'],['pet1','寵物裝備 1'],['pet2','寵物裝備 2'],['pet3','寵物裝備 3'],['set','套裝 set']];
+function normalizeEquipment(s){
+ s.equipment=s.equipment||[]; s.equipmentSets=s.equipmentSets||[];
+ const used=new Set();
+ for(const item of s.equipment){
+  if(!item.mergedStats){
+   const parts=[{...item,enabled:true},item.scroll,item.potential,item.additional].filter(Boolean);
+   const combined=sumEffects(parts);
+   for(const key of STATS)item[key]=combined.total[key];
+   item.ied=(1-combined.ies.reduce((v,x)=>v*(1-x),1))*100;
+   item.finalDamage=(combined.finals.reduce((v,x)=>v*(1+x),1)-1)*100;
+   item.allStatPct=parts.reduce((v,x)=>v+num(x.allStatPct),0);
+   item.legacyDetails={scroll:item.scroll,potential:item.potential,additional:item.additional};
+   delete item.scroll;delete item.potential;delete item.additional;item.mergedStats=true;
+  }
+  if(!item.slot){
+   const name=String(item.name||'');
+   if(!/套裝|set|潛能|卷軸|強化/i.test(name)){
+    const rules=[['hat',/帽/],['body',/大衣|套服|上衣/],['gloves',/手套/],['shoes',/鞋|靴/],['cape',/披風/],['weapon',/刺刀|槍劍|武器/]];
+    item.slot=rules.find(([id,re])=>!used.has(id)&&re.test(name))?.[0]||'extra';
+   }else item.slot='extra';
+  }
+  if(used.has(item.slot)&&item.slot!=='extra')item.slot='extra';
+  if(item.slot!=='extra')used.add(item.slot);
+
+ }
+ for(const [slot] of GEAR_SLOTS)if(!used.has(slot))s.equipment.push({slot,name:'',enabled:true,mergedStats:true});
+ s.equipment=s.equipment.filter(x=>GEAR_SLOTS.some(([id])=>id===x.slot));
+ s.equipmentSets=[];
+ s.equipmentSchema=2;
+ return s;
+}
+function suitEquipped(){return state.equipment.some(x=>x.slot==='body'&&x.enabled!==false&&x.bodyKind==='overall')}
+function equipmentEffects(){
+ const entries=[];
+ for(const item of state.equipment){
+  if(item.enabled===false||(item.slot==='pants'&&suitEquipped()))continue;
+  for(const part of [item]){
+   if(!part)continue;
+   entries.push({...part,dexPct:num(part.dexPct)+num(part.allStatPct),strPct:num(part.strPct)+num(part.allStatPct)});
+  }
+ }
+ return entries;
+}
+
+const JOB_SKILLS=[
+ ['精靈的祝福','女皇的祝福'],
+ ['花力強化(青)'],
+ ['閃雷','散破','花力強化(黃)','體能訓練','火繩槍劍精通'],
+ ['火繩槍劍．連 III','昇花','落花','貫破','櫻陣','狙擊','幸運骰子','復仇之心','殘影','花力強化(朱)'],
+ ['花尖','點花','奧義．爆','花力開放','雙倍幸運骰子','黎明勇士','火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳']
+];
+const JOB_SKILL_DATA={
+ '精靈的祝福':{max:20,attackPerLevel:1,description:'每級物攻 +1，與女皇的祝福取較高值。'},
+ '女皇的祝福':{max:24,attackPerLevel:1,description:'每級物攻 +1，與精靈的祝福取較高值。'},
+ '花力強化(青)':{max:5,attackPerLevel:2,description:'每級物攻 +2。'},
+ '閃雷':{max:20,description:'滿等造成 285% 傷害，最多攻擊 6 個敵人。'},
+ '散破':{max:20,description:'滿等造成 365% 傷害，最多攻擊 6 個敵人。'},
+ '花力強化(黃)':{max:5,effect:{ied:20},description:'滿等常駐無視防禦 +20%，爆發期間散破倍率增加 180%。'},
+ '體能訓練':{max:5,effect:{str:30,dex:30},description:'滿等 STR、DEX 各 +30。'},
+ '火繩槍劍精通':{max:20,description:'滿等技能熟練度 50%，另計推定的基礎熟練度 15%。'},
+ '火繩槍劍．連 III':{max:15,description:'最多攻擊 4 個敵人。四擊依序為 125% × 2、130% × 2、140% × 2、190% × 4，合計 1,550%。命中花力依序為 70、70、70、100。花力全開時攻速提升 1 階。循環試算使用滿等倍率與「技能與循環」的實測時間。'},
+ '昇花':{max:10,description:'MP 25。205% × 2，最多攻擊 4 個敵人，命中獲得 50 花力。'},
+ '落花':{max:10,description:'MP 25。215% × 2，最多攻擊 4 個敵人，命中獲得 50 花力。'},
+ '貫破':{max:20,description:'MP 25。270% × 2，最多攻擊 6 個敵人，命中獲得 50 花力。集氣越久傷害越高，花力全開時直接以最大威力發射。'},
+ '櫻陣':{max:20,description:'MP 20。475% × 4，最多攻擊 15 個敵人，命中獲得 50 花力，冷卻 20 秒。'},
+ '幸運骰子':{max:20,description:'MP 60。隨機增益持續 180 秒，擲出 1 時沒有增益。冷卻 200 秒，武陵道場套用傷害增加效果。'},
+ '復仇之心':{max:20,effect:{attack:20},toggle:'計入復仇之心',description:'MP 10。240 秒內隊伍物攻、魔攻各 +20。'},
+ '殘影':{max:15,effect:{damage:20},toggle:'計入成功迴避後的增傷',description:'額外迴避機率 25%，迴避成功後 13 秒內傷害 +20%。'},
+ '花力強化(朱)':{max:5,effect:{critRate:20},burstEffect:{attack:20},description:'常態及爆發皆增加 20 個百分點爆擊率。花力全開時物攻 +20、貫破每段 +165%p、最大 HP +5%。'},
+ '花尖':{max:20,summary:level=>{
+  const {b1,b2}=fourthJobMultipliers(level,0,0,0);
+  return `${b1}% × 2 ＋ ${b2}% × 3`;
+ }},
+ '點花':{max:30,summary:level=>{
+  const {flower,dot}=fourthJobMultipliers(0,level,0,0);
+  return `${flower}% × 8，持續傷害每跳 ${dot}%，持續 ${flowerDotDuration(level)} 秒。`;
+ }},
+ '狙擊':{max:20,description:'滿等 1,695% × 4，必定爆擊，冷卻 30 秒。'},
+ '奧義．爆':{max:30,summary:level=>`${fourthJobMultipliers(0,0,level,0).ult}% × 3`},
+ '花力開放':{max:20,burstAt:level=>({critRate:100,ied:30+level}),
+  summary:level=>`${9+level} 秒內爆擊率 +100 個百分點、無視防禦 +${30+level}%，冷卻 180 秒。`,
+  description:'打王模擬採 20 秒固定輸出節奏。'},
+ '雙倍幸運骰子':{max:5,summary:level=>`${10*level}% 機率擲出兩顆骰子，增益持續 ${180+4*level} 秒。`},
+ '黎明勇士':{max:30,summary:level=>level===30?'STR、DEX 等所有屬性 +15%，持續 900 秒。':'此等級效果待確認',
+  description:'全屬性% 的計算基底待驗證。'},
+ '火繩槍劍專家':{max:30,effectAt:level=>({attack:level}),
+  summary:level=>`技能熟練度 ${expertMastery(level)}%，物攻 +${level}。`},
+ '花力強化(紅)':{max:5,effectAt:level=>({critDamage:10+2*level}),burstAt:()=>({damage:20}),
+  summary:level=>`最小與最大爆擊傷害各 +${10+2*level}%p。爆發傷害 +20%，點花每段 +${flowerBurstBonus(level)}%p。`},
+ '殘花':{max:10,effectAt:level=>({attack:10+level}),
+  summary:level=>`物攻 +${10+level}。攻擊時有 ${60+level}% 機率觸發 ${170+3*level}% × 3，基礎冷卻 2 秒。`,
+  description:'打王模擬按每次直擊的觸發機率與冷卻計算期望傷害。'},
+ '火繩槍劍秘傳':{max:30,summary:level=>`貫破、昇花、落花最終傷害 +${level}%，可攻擊敵人數 +2。翻滾後 3 秒內，下一次貫破 +${19+level}% 或狙擊每段 +${secretSnipeBonus(level)}%p。殘花發動間隔減少 ${fmt(0.0433333*level,4)} 秒。`}
+};
+function jobSkillName(name){
+ const clean=String(name??'').normalize('NFKC').replace(/\s/g,'');
+ if(/^花力(?:全開|解放|開放)/.test(clean))return '花力開放';
+ if(/^火繩槍劍[.・．·•]連(?:III)?$/.test(clean))return '火繩槍劍．連 III';
+ return JOB_SKILLS.flat().find(skill=>skill.normalize('NFKC').replace(/\s/g,'')===clean);
+}
+function separateJobSkills(settings){
+ settings.jobSkillLevels=settings.jobSkillLevels??{};
+ settings.jobSkillToggles=settings.jobSkillToggles??{};
+ settings.jobSkillEffects=Array.isArray(settings.jobSkillEffects)?settings.jobSkillEffects:[];
+ settings.buffs=settings.buffs.filter(effect=>{
+  const name=String(effect.name??'').trim();
+  if(!jobSkillName(name)&&! /^(花力強化|體能訓練|火繩槍劍(?:精通|專家)|殘花|復仇之心)/.test(name))return true;
+  settings.jobSkillEffects.push(effect);
+  return false;
+ });
+ for(const [name,baseAttack] of [['火繩槍劍專家',0],['殘花',10]]){
+  if(settings.jobSkillLevels[name]!=null)continue;
+  const previous=settings.jobSkillEffects.find(effect=>jobSkillName(effect.name)===name&&effect.enabled!==false);
+  const level=num(previous?.attack)-baseAttack;
+  if(Number.isInteger(level)&&level>0&&level<=JOB_SKILL_DATA[name].max)settings.jobSkillLevels[name]=level;
+ }
+ if(settings.jobSkillLevels['花力強化(紅)']==null&&settings.jobSkillEffects.some(effect=>jobSkillName(effect.name)==='花力強化(紅)'&&effect.enabled===false)){
+  settings.jobSkillLevels['花力強化(紅)']=0;
+ }
+ return settings;
+}
+let state=separateJobSkills(normalizeEquipment(load())), tab='dashboard';
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function load(){
+ try{
+  const raw=localStorage.getItem(KEY);
+  if(raw){
+   let x=JSON.parse(raw);
+   if(x&&x.skill&&x.base&&Array.isArray(x.equipment)&&Array.isArray(x.buffs)&&Array.isArray(x.links)){
+    if(!localStorage.getItem(KEY+'_backup_before_simple_slots'))localStorage.setItem(KEY+'_backup_before_simple_slots',raw);
+    if(!localStorage.getItem(KEY+'_backup_before_equipment_v5'))localStorage.setItem(KEY+'_backup_before_equipment_v5',raw);
+    if(!localStorage.getItem(KEY+'_backup_before_v4'))localStorage.setItem(KEY+'_backup_before_v4',raw);
+    x.base={...INITIAL.base,...x.base};
+    x.boss={...INITIAL.boss,...(x.boss||{})};
+    x.skill={...INITIAL.skill,...x.skill};
+    x.calc={...INITIAL.calc,...(x.calc||{})};
+    // 舊版校正資訊仍保留在資料中，但新版計算完全不使用。
+    return x;
+   }
+  }
+ }catch(e){console.warn('無法載入舊設定',e)}
+ return clone(INITIAL);
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+function num(x){let n=Number(x);return Number.isFinite(n)?n:0}function clamp(x,l,h){return Math.max(l,Math.min(h,x))}
+function fmt(x,d=1){return Number.isFinite(x)?x.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:d}):'—'}
+function pct(x,d=1){return fmt(x,d)+'%'}
+function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function input(label,path,val,tip='',step='any'){return `<label class="field"><span>${label}${tip?` <span class="muted" title="${esc(tip)}">ⓘ</span>`:''}</span><input type="number" step="${step}" data-path="${esc(path)}" value="${esc(val)}"></label>`}
+function select(label,path,value,options){return `<label class="field"><span>${label}</span><select data-path="${esc(path)}">${options.map(o=>`<option value="${esc(o[0])}" ${String(value)===String(o[0])?'selected':''}>${esc(o[1])}</option>`).join('')}</select></label>`}
+function checkbox(label,path,value){return `<label class="toggle"><input type="checkbox" data-path="${esc(path)}" ${value?'checked':''}><span>${label}</span></label>`}
+function getPath(path){return path.replace(/\[(\d+)\]/g,'.$1').split('.').reduce((x,k)=>x?.[k],state)}
+function setPath(path,value){let s=path.replace(/\[(\d+)\]/g,'.$1').split('.');let x=state;for(let i=0;i<s.length-1;i++)x=x[s[i]];x[s[s.length-1]]=value}
+function sumEffects(entries){let total={};for(const k of STATS)total[k]=0;let ies=[];let finals=[];for(const e of entries){if(!e||e.enabled===false)continue;for(const k of STATS){if(k==='ied'){if(num(e[k])!==0)ies.push(clamp(num(e[k]),0,100)/100)}else if(k==='finalDamage'){if(num(e[k])!==0)finals.push(num(e[k])/100)}else total[k]+=num(e[k])}}return {total,ies,finals}}
+function linkEntries(){return state.links.map(item=>LINK[item.id]?.effects[clamp((item.level|0)-1,0,4)]||{})}
+function jobSkillLevel(name,levels=state.jobSkillLevels){
+ const max=JOB_SKILL_DATA[name].max;
+ return clamp(Math.trunc(num(levels[name]??max)),0,max);
+}
+function jobSkillAttack(name,levelFor=jobSkillLevel){
+ return levelFor(name)*JOB_SKILL_DATA[name].attackPerLevel;
+}
+function fourthJobMultipliers(tipLevel,flowerLevel,ultLevel,redLevel){
+ return {
+  b1:tipLevel?120+2*tipLevel:0,
+  b2:tipLevel?165+2*tipLevel:0,
+  flower:flowerLevel?135+2*flowerLevel:0,
+  dot:flowerLevel?120+4*flowerLevel:0,
+  ult:ultLevel?220+2*ultLevel:0,
+  flowerBonus:flowerLevel?flowerBurstBonus(redLevel):0
+ };
+}
+function flowerBurstBonus(level){
+ return level?115+4*level:0;
+}
+function flowerDotDuration(level){
+ return level?1+Math.floor(level/10):0;
+}
+function expertMastery(level){
+ return 55+Math.ceil(level/2);
+}
+function secretSnipeBonus(level){
+ return level>0?160+4*level:0;
+}
+function rotationSkillSettings(levelFor=jobSkillLevel){
+ const settings=state.skill;
+ const tipLevel=levelFor('花尖');
+ return {...settings,...fourthJobMultipliers(tipLevel,levelFor('點花'),levelFor('奧義．爆'),levelFor('花力強化(紅)')),
+  aStages:INITIAL.skill.aStages,b1hits:2,b2hits:3,ultHits:3,flowerHits:8,
+  bComboBonus:tipLevel?settings.bComboBonus:0};
+}
+function jobSkillToggle(name,burst=true){
+ return state.jobSkillToggles[name]??state.jobSkillEffects.some(effect=>
+  effect.enabled!==false&&jobSkillName(effect.name)===name&&(effect.phase==='always'||burst&&effect.phase==='burst')
+ );
+}
+function modeledJobEffects(burst,levelFor){
+ const blessing=Math.max(jobSkillAttack('精靈的祝福',levelFor),jobSkillAttack('女皇的祝福',levelFor));
+ const effects=[{attack:blessing+jobSkillAttack('花力強化(青)',levelFor)}];
+ for(const [name,skill] of Object.entries(JOB_SKILL_DATA)){
+  const level=levelFor(name);
+  if(!level||(skill.toggle&&!jobSkillToggle(name,burst)))continue;
+  const effect=skill.effectAt?.(level)??(level===skill.max?skill.effect:undefined);
+  const burstEffect=skill.burstAt?.(level)??(level===skill.max?skill.burstEffect:undefined);
+  if(effect)effects.push(effect);
+  if(burst&&burstEffect)effects.push(burstEffect);
+ }
+ return effects;
+}
+function totalWeaponMastery(base,levelFor){
+ const level=levelFor('火繩槍劍精通');
+ const expertLevel=levelFor('火繩槍劍專家');
+ if(base.masteryMode==='manual')return clamp(num(base.weaponMastery),0,100);
+ if(expertLevel)return 15+expertMastery(expertLevel);
+ if(level>0&&level<20)return clamp(num(base.weaponMastery),0,100);
+ return 15+(level===20?50:0);
+}
+function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillLevel){
+ const isActive=effect=>effect.phase==='always'||(burst&&effect.phase==='burst');
+ const jobEffects=state.jobSkillEffects.filter(isActive).flatMap(effect=>{
+  const name=jobSkillName(effect.name);
+  if(name==='花力開放')return [{...effect,critRate:0,ied:0}];
+  return JOB_SKILL_DATA[name]?[]:[effect];
+ });
+ const ents=[...equipmentEffects(),...linkEntries(),...state.buffs.filter(isActive),...jobEffects,...modeledJobEffects(burst,levelFor)];
+ const {total:t,ies,finals}=sumEffects(ents);
+ const dex=(num(b.dex)+t.dex)*(1+(num(b.dexPct)+t.dexPct)/100), str=(num(b.str)+t.str)*(1+(num(b.strPct)+t.strPct)/100);
+ const attack=(num(b.attack)+t.attack)*(1+(num(b.atkPct)+t.atkPct)/100);
+ const damage=num(b.damage)+t.damage, boss=num(b.boss)+t.boss;
+ let iedRemain=(1-clamp(num(b.ied),0,100)/100);
+ for(let p of ies)iedRemain*=1-p;
+ const panelIed=(1-iedRemain)*100;
+ if(num(state.boss.partyIed)>0)iedRemain*=1-clamp(num(state.boss.partyIed),0,100)/100;
+ const ied=(1-iedRemain)*100;
+ const pdr=clamp(num(state.boss.pdr),0,999);
+ const defense=Math.max(0,1-(pdr/100)*iedRemain);
+ let finalFactor=(1+num(b.finalDamage)/100);for(const p of finals)finalFactor*=1+p;
+ const critRate=clamp(num(b.critRate)+t.critRate,0,100);
+ const extraCrit=num(b.critDamage)+t.critDamage;
+ const extraCritMax=num(b.critMax)+t.critMax;
+ const minCrit=120+extraCrit, maxCrit=150+extraCrit+extraCritMax;
+ const critBonus=.35+(extraCrit+extraCritMax*.5)/100;
+ const critFactor=critMode==='normal'?1:critMode==='critical'?1+critBonus:1+critRate/100*critBonus;
+ const weaponConstant=Math.max(0,num(b.weaponConstant));
+ const weaponMastery=totalWeaponMastery(b,levelFor);
+ // 依菖蒲面板實測，最小表攻以最大表攻乘上總熟練度估算。
+ // 不能保證楓星菖蒲的武器係數及表攻增益規則與 Artale 完全相同。
+ const rawRange=Math.max(0,(4*dex+str)*attack*weaponConstant/100);
+ const rawMin=rawRange*weaponMastery/100;
+ const panelFactor=Math.max(0,1+damage/100)*Math.max(0,finalFactor);
+ const panelRangeMax=rawRange*panelFactor;
+ const panelRangeMin=Math.round(panelRangeMax)*weaponMastery/100;
+ const panelAverageFactor=panelRangeMax>0?(panelRangeMax+panelRangeMin)/(2*panelRangeMax):0;
+ const multi=Math.max(0,1+(damage+boss)/100)*finalFactor*critFactor*defense*(1+num(state.boss.taken)/100)*num(b.levelMultiplier);
+ const averageRaw=(rawRange+rawMin)/2;
+ return {dex,str,attack,damage,boss,ied,panelIed,defense,finalFactor,critRate,minCrit,maxCrit,critBonus,critFactor,rawRange,rawMin,
+  predictedPanel:panelRangeMax,predictedMin:panelRangeMin,panelRangeMax,panelRangeMin,panelAverageFactor,
+  weaponConstant,weaponMastery,multi,per100:Math.max(0,averageRaw*multi),iedRemain};
+}
+const BURST_SECONDS=20, ULT_SHOTS=80, FLOWER_SHOTS=12, SNIPE_COOLDOWN=30, FIGHT_SECONDS=180;
+function combos(s,levelFor){
+ const a=s.aStages.reduce((total,value)=>total+num(value),0);
+ const b=s.b1*s.b1hits+s.b2*s.b2hits;
+ const connected=b+s.bComboBonus*(s.b1hits+s.b2hits);
+ const aKnown=levelFor('火繩槍劍．連 III')===15, bKnown=levelFor('花尖')>0;
+ const makeStages=(offsets,time,reference)=>s.aStages.map((damage,i)=>({
+  damage:num(damage),energy:num(s.aCharge[i]),offset:offsets[i]*time/reference
+ }));
+ return [
+  {id:'a',name:'A 四連擊',time:num(s.aTime),damage:a,available:aKnown,stages:makeStages([0,.283,.566,.983],num(s.aTime),1.392)},
+  {id:'b',name:'B 花尖',time:num(s.bTime),damage:b,available:bKnown,stages:[{damage:b,energy:num(s.bCharge),offset:0}]},
+  {id:'ab',name:'C 四連擊＋花尖',time:num(s.abTime),damage:a+connected,available:aKnown&&bKnown,
+   stages:[...makeStages([0,.278,.559,.970],num(s.abTime),1.953),{damage:connected,energy:num(s.bComboCharge),offset:1.495*num(s.abTime)/1.953}]}
+ ];
+}
+function chargePlan(combo,s){
+ const time=Math.max(.01,combo.time);
+ const energy=combo.stages.reduce((sum,stage)=>sum+stage.energy,0);
+ const factor=Math.max(.00001,num(s.chargeFactor)), target=Math.max(1,num(s.chargeMax));
+ const perCombo=energy*factor;
+ const count=perCombo>0?Math.ceil(target/perCombo):Infinity;
+ let elapsed=count*time, lastHits=combo.stages.length;
+ if(Number.isFinite(count)&&state.calc.finish==='partial'){
+  let energyLeft=target-(count-1)*perCombo;
+  const hit=combo.stages.findIndex(stage=>(energyLeft-=stage.energy*factor)<=1e-7);
+  if(hit>=0){lastHits=hit+1;elapsed=(count-1)*time+combo.stages[hit].offset}
+ }
+ return {...combo,time,energy,perCombo,count,elapsed,lastHits,cycleTime:elapsed+BURST_SECONDS};
+}
+function burstDetails(s,levelFor){
+ const dotDuration=flowerDotDuration(levelFor('點花'));
+ return {
+  ultPerShot:s.ult*s.ultHits,flowerPerShot:s.flower*s.flowerHits,flowerBurstBonus:s.flowerBonus*s.flowerHits,
+  dotPerTick:s.dot,dotDuration,
+  shot:levelFor('狙擊')===20?(1695+secretSnipeBonus(levelFor('火繩槍劍秘傳')))*4:0
+ };
+}
+function simulateFight(c,seconds,normal,burst,skills,levelFor){
+ if(!c.available)return null;
+ const openingLevel=levelFor('花力開放');
+ const canBurst=openingLevel>0;
+ const buffSeconds=Math.min(BURST_SECONDS,9+openingLevel);
+ const cycleTime=canBurst?c.cycleTime:Infinity;
+ const events=[];
+ const flowerTimes=[];
+ const add=(time,source,multiplier,phase=false)=>{
+  if(time<seconds&&multiplier>0)events.push({time,source,multiplier,phase});
+ };
+ let charges=0,bursts=0;
+ for(let start=0;start<seconds;start+=cycleTime){
+  const chargeEnd=canBurst?start+c.elapsed:Infinity;
+  const count=canBurst?c.count:Infinity;
+  for(let index=0;index<count&&start+index*c.time<seconds;index++){
+   const stages=index===count-1?c.stages.slice(0,c.lastHits):c.stages;
+   for(const stage of stages)add(start+index*c.time+stage.offset,'charge',stage.damage);
+  }
+  if(chargeEnd>=seconds)break;
+  charges++;
+  if(chargeEnd+BURST_SECONDS<=seconds)bursts++;
+  for(let i=0;i<ULT_SHOTS;i++)add(chargeEnd+10*i/ULT_SHOTS,'ult',skills.ultPerShot,true);
+  for(let i=0;i<FLOWER_SHOTS;i++){
+   const offset=10+10*i/FLOWER_SHOTS;
+   const time=chargeEnd+offset;
+   const phase=offset<buffSeconds;
+   add(time,'flower',skills.flowerPerShot+(phase?skills.flowerBurstBonus:0),phase);
+   if(time<seconds&&skills.dotDuration)flowerTimes.push(time);
+  }
+ }
+ const inBurst=time=>{
+  const offset=time%cycleTime-c.elapsed;
+  return canBurst&&offset>=0&&offset<buffSeconds;
+ };
+ // 每發刷新同一個 DoT，沿用每秒一跳的節拍。
+ let expiry=-Infinity, tick=Infinity;
+ for(const time of flowerTimes){
+  while(tick<=Math.min(time,expiry)){add(tick,'dot',skills.dotPerTick,inBurst(tick));tick++}
+  if(time>expiry)tick=time+1;
+  expiry=time+skills.dotDuration;
+ }
+ for(;tick<=expiry&&tick<seconds;tick++)add(tick,'dot',skills.dotPerTick,inBurst(tick));
+ for(let time=0;skills.shot&&time<seconds;time+=SNIPE_COOLDOWN){
+  add(time,'snipe',skills.shot,inBurst(time));
+ }
+ // 同時命中時先處理狙擊，讓後續爆發攻擊可使用既有標記選項。
+ events.sort((a,b)=>a.time-b.time||Number(b.source==='snipe')-Number(a.source==='snipe'));
+ const level=levelFor('殘花'), secret=levelFor('火繩槍劍秘傳');
+ const procChance=level?(60+level)/100:0, procMultiplier=(170+3*level)*3;
+ const cooldown=2-0.0433333*secret;
+ const unlocks=[];
+ let ready=1, unlockIndex=0, procs=0, markUntil=0;
+ const totals={};
+ for(const source of ['charge','ult','flower','dot','snipe','proc'])totals[source]={count:0,multiplier:0,damage:0};
+ const record=(source,multiplier,damage,count=1)=>{
+  const row=totals[source];row.count+=count;row.multiplier+=multiplier;row.damage+=damage;
+ };
+ for(const event of events){
+  const context=event.phase?burst:normal;
+  const critical=event.source==='snipe'?(1+context.critBonus)/context.critFactor:1;
+  const marked=event.phase&&event.time<markUntil&&event.source!=='snipe';
+  let mark=1;
+  if(marked&&state.skill.markMode==='multiplicative')mark=1+num(state.skill.mark)/100;
+  if(marked&&state.skill.markMode==='additive'){
+   const factor=1+(context.damage+context.boss)/100;
+   mark=Math.max(0,factor+num(state.skill.mark)/100)/Math.max(.001,factor);
+  }
+  const per100=context.per100/100;
+  record(event.source,event.multiplier,event.multiplier*per100*critical*mark);
+  if(event.source==='snipe'&&event.phase)markUntil=(Math.floor(event.time/cycleTime)+1)*cycleTime;
+  if(!procChance||event.source==='dot')continue;
+  // 只將成功觸發的機率質量送入冷卻，失敗仍可在下一次攻擊觸發。
+  while(unlockIndex<unlocks.length&&unlocks[unlockIndex].time<=event.time+1e-9){
+   ready+=unlocks[unlockIndex++].chance;
+  }
+  const chance=clamp(ready,0,1)*procChance;
+  ready-=chance;procs+=chance;
+  if(chance>0)unlocks.push({time:event.time+cooldown,chance});
+  record('proc',procMultiplier*chance,procMultiplier*chance*per100*mark,chance);
+ }
+ const dealt=Object.values(totals).reduce((sum,row)=>sum+row.damage,0);
+ const multiplier=Object.values(totals).reduce((sum,row)=>sum+row.multiplier,0);
+ return {totals,dealt,multiplier,charges,bursts,procs,dps:dealt/seconds};
+}
+function compute(levels=state.jobSkillLevels){
+ const levelFor=name=>jobSkillLevel(name,levels);
+ const normal=buildContext(false,'avg',state.base,levelFor);
+ const br=buildContext(true,'avg',state.base,levelFor);
+ const settings=rotationSkillSettings(levelFor), skills=burstDetails(settings,levelFor);
+ const cycles=combos(settings,levelFor).map(combo=>{
+  const plan=chargePlan(combo,settings);
+  return {...plan,run:simulateFight(plan,FIGHT_SECONDS,normal,br,skills,levelFor)};
+ });
+ const win=cycles.filter(c=>c.run).sort((a,b)=>b.run.dps-a.run.dps)[0];
+ return {normal,br,skills,cycles,win,seconds:FIGHT_SECONDS};
+}
+const RECOMMENDABLE_SKILLS=[
+ '精靈的祝福','女皇的祝福','花力強化(青)','花尖','點花','奧義．爆',
+ '火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳'
+];
+function recommendSkillPoints(result,rotation){
+ const pick=trial=>rotation==='best'?trial.win:trial.cycles.find(c=>c.id===rotation&&c.run);
+ const baseline=pick(result);
+ if(!baseline)return [];
+ return RECOMMENDABLE_SKILLS.flatMap(name=>{
+  const level=jobSkillLevel(name);
+  if(level>=JOB_SKILL_DATA[name].max)return [];
+  const trial=pick(compute({...state.jobSkillLevels,[name]:level+1}));
+  if(!trial)return [];
+  return [{name,level,trial,baseline,gain:trial.run.dealt-baseline.run.dealt}];
+ }).sort((a,b)=>b.gain-a.gain);
+}
+function recommendationPanel(result){
+ const rotation=state.calc.recommendRotation??'best';
+ const options=[['best','每次取傷害最高打法'],...result.cycles.filter(c=>c.run).map(c=>[c.id,c.name])];
+ const selected=options.some(([key])=>key===rotation)?rotation:'best';
+ const rows=recommendSkillPoints(result,selected);
+ return `<div class="panel" id="skill-recommendations"><h2>推薦技能點</h2>
+ <p class="desc">各技能分別試加 1 點，比較同一配裝與 Boss 設定下的 180 秒總傷害。資料未齊的技能先略過，例如黎明勇士、雙倍幸運骰子與花力開放。</p>
+ ${select('比較打法','calc.recommendRotation',selected,options)}
+ ${rows.length?`<div class="tablewrap"><table><thead><tr><th>技能</th><th>等級</th><th>試算打法</th><th>總傷害差</th><th>DPS 差</th><th>提升率</th></tr></thead><tbody>
+ ${rows.map(({name,level,trial,baseline,gain},i)=>{
+  const signed=(value,digits)=>(value>0?'+':'')+fmt(value,digits);
+  return `<tr><td class="${i===0&&gain>0?'good':''}">${name}</td><td>${level} → ${level+1}</td><td>${trial.name}</td>
+  <td>${signed(gain,0)}</td><td>${signed(gain/FIGHT_SECONDS,1)}</td><td>${baseline.run.dealt>0?signed(gain/baseline.run.dealt*100,2)+'%':'—'}</td></tr>`;
+ }).join('')}</tbody></table></div>`:'<p class="small muted">目前沒有可比較的技能。請確認打法可用，並有未滿等且已知每級效果的技能。</p>'}</div>`;
+}
+
+function metric(k,v,sub){return `<div class="metric"><label>${k}</label><strong>${v}</strong><em>${sub}</em></div>`}
+function barRows(data,key,suffix='',decimal=1){let max=Math.max(0,...data.map(x=>x[key]));return data.map(x=>`<div class="chartrow"><div>${x.name}</div><div class="track"><div class="bar ${x.id}" style="width:${max?Math.max(0,x[key])/max*100:0}%"></div></div><div class="right"><b>${fmt(x[key],decimal)}</b>${suffix}</div></div>`).join('')}
+function dashboard(){
+ const result=compute(),{normal,cycles,win,seconds,skills}=result;
+ const played=cycles.filter(c=>c.run);
+ const sources=[['charge','集花力攻擊'],['ult','奧義．爆'],['flower','點花直擊'],['dot','點花持續傷害'],['snipe','狙擊'],['proc','殘花期望觸發']];
+ const baseline=state.baseline?.seconds===seconds?state.baseline:null;
+ const baselineRows=baseline?played.map(c=>{
+  const prev=baseline.cycles?.find(x=>x.id===c.id)?.dps;
+  return `<div class="statline"><span>${c.name}</span><b>${prev>0?pct((c.run.dps/prev-1)*100,2):'—'}</b></div>`;
+ }).join(''):'';
+ return `<div class="grid">${metric('預測常態最小表攻',fmt(normal.panelRangeMin,0),'熟練度 '+fmt(normal.weaponMastery,0)+'%')}
+ ${metric('預測常態最大表攻',fmt(normal.panelRangeMax,0),'武器係數 '+fmt(normal.weaponConstant,3))}
+ ${metric('常態每 100% 平均傷害',fmt(normal.per100,0),'含爆擊期望與 Boss 防禦')}
+ ${metric('180 秒最高 DPS',fmt(win?.run.dps,0),win?.name??'請確認職業技能等級')}</div>
+ <div class="panel"><div class="flex space"><div><h2>180 秒打王傷害模擬</h2><p class="desc">花力充滿後先打 10 秒奧義（80 發），再打 10 秒點花（12 發）。狙擊開場使用，之後每 30 秒使用一次。</p></div>
+ <div class="fields">${input('Boss 物理防禦率 %','boss.pdr',state.boss.pdr)}</div></div>
+ <div class="actionline"><button class="btn sm ${state.calc.finish==='full'?'primary':''}" data-action="finish" data-value="full">最後一套完整施放</button>
+ <button class="btn sm ${state.calc.finish==='partial'?'primary':''}" data-action="finish" data-value="partial">充滿瞬間切爆發（估算）</button>
+ <button class="btn sm" data-action="snapshot">儲存當前比較基準</button><button class="btn sm" data-action="csv">匯出比較 CSV</button></div>
+ <div class="tablewrap"><table><thead><tr><th>比較項目</th>${cycles.map(c=>`<th>${c.name}</th>`).join('')}</tr></thead><tbody>
+ ${[
+  ['單套集花力倍率',c=>pct(c.damage,0)],['單套時間',c=>fmt(c.time,3)+' 秒'],['每套花力',c=>fmt(c.perCombo,1)],
+  ['花力充滿時間',c=>Number.isFinite(c.elapsed)?fmt(c.elapsed,2)+' 秒':'無法充滿'],
+  ['完整集花力＋爆發時間',c=>Number.isFinite(c.cycleTime)?fmt(c.cycleTime,2)+' 秒':'—'],
+  ['爆發開始／完成次數',c=>c.run.charges+'／'+c.run.bursts],
+  ['戰鬥總技能倍率',c=>pct(c.run.multiplier,1)],
+  ['平均技能倍率（%／秒）',c=>pct(c.run.multiplier/seconds,1)+'/秒'],
+  ['預估總傷害',c=>fmt(c.run.dealt,0)],['預估平均 DPS',c=>fmt(c.run.dps,0)]
+ ].map(([label,format])=>`<tr><td>${label}</td>${cycles.map(c=>`<td>${c.run?format(c):'—'}</td>`).join('')}</tr>`).join('')}
+ </tbody></table></div>
+ ${cycles.some(c=>!c.available)?'<p class="small muted">A／C 需要滿等的火繩槍劍．連 III，B／C 需要習得花尖。四連擊低等級倍率待確認。</p>':''}
+ ${jobSkillLevel('花力開放')===0?'<p class="small muted">花力開放尚未習得，戰鬥中會持續使用集花力打法。</p>':''}
+ ${jobSkillLevel('狙擊')>0&&!skills.shot?'<p class="small muted">狙擊低等級倍率待確認，本次試算略過狙擊。</p>':''}
+ ${barRows(played.map(c=>({...c,dps:c.run.dps})),'dps',' /秒',0)}</div>
+ ${recommendationPanel(result)}
+ <div class="panel"><h2>180 秒傷害來源明細</h2><p class="desc">DPS% 為該技能的實際傷害占比。倍率／秒為技能總倍率除以 180，保留角色乘區套用前的數字。</p>
+ <div class="tablewrap"><table><thead><tr><th>技能</th>${cycles.map(c=>`<th>${c.name}</th>`).join('')}</tr></thead><tbody>
+ ${sources.map(([key,label])=>`<tr><td>${label}</td>${cycles.map(c=>{
+  const row=c.run?.totals[key];
+  return `<td>${row?`${fmt(row.count,key==='proc'?2:0)} 次 · ${pct(row.multiplier/seconds,1)}/秒<br><b>${fmt(row.damage/seconds,1)} DPS</b> · ${c.run.dealt>0?pct(row.damage/c.run.dealt*100,2):'—'}</td>`:'—'}</td>`;
+ }).join('')}</tr>`).join('')}</tbody></table></div>
+ <p class="small muted">奧義與點花在各自的 10 秒內均勻發射。狙擊假設每次都先翻滾，秘傳加成加在每段倍率上，翻滾與施放時間暫視為 0。爆發增益最多覆蓋本輪 20 秒。點花持續傷害每秒跳一次，連續命中刷新時間。殘花每次直擊擲一次，成功才進入冷卻，持續傷害跳數不觸發。</p></div>
+ ${baseline?`<div class="panel"><div class="flex space"><h2>與基準的 DPS 差異</h2><button class="btn sm" data-action="clearBaseline">清除基準</button></div>${baselineRows}</div>`:''}`;
+}
+
+const PANEL_STATS=[['damage','傷害'],['boss','Boss 攻擊力'],['panelIed','無視防禦'],['critRate','爆擊率'],['minCrit','最小爆擊'],['maxCrit','最大爆擊']];
+function formatPanelStat(key,value){return pct(key==='panelIed'?Math.floor(Number(value.toFixed(10))):value,0)}
+const RANGE_STATS=[['dex','DEX'],['dexPct','DEX %'],['attack','物攻'],['atkPct','物攻 %']];
+function rangeComparison(){
+ return `<div class="panel"><h2>表攻提升比較</h2><p class="desc">以目前常態配裝的最大表攻比較。百分比欄位以百分點輸入，例如 DEX % 填 1 代表增加 1 個百分點。</p>
+ <div class="two">${select('增加的屬性','calc.rangeStat',state.calc.rangeStat??'dexPct',RANGE_STATS)}${input('增加量','calc.rangeAmount',state.calc.rangeAmount??1)}</div>
+ <div class="statline"><span>最大表攻提升</span><b id="range-gain">—</b></div>
+ <div class="two">${RANGE_STATS.map(([key,label])=>`<div class="statline"><span>等效 ${label}</span><b id="range-equivalent-${key}">—</b></div>`).join('')}</div></div>`;
+}
+function updateRangeComparison(normal){
+ const gainCell=document.getElementById('range-gain');
+ if(!gainCell)return;
+ const selected=RANGE_STATS.find(([key])=>key===state.calc.rangeStat)?.[0]??'dexPct';
+ const amount=Math.max(0,num(state.calc.rangeAmount??1));
+ const maxWith=(key,bonus)=>buildContext(false,'avg',{...state.base,[key]:num(state.base[key])+bonus}).panelRangeMax;
+ const before=normal.panelRangeMax;
+ const after=maxWith(selected,amount);
+ const gain=after-before;
+ gainCell.textContent=`+${fmt(Math.round(after)-Math.round(before),0)}（${fmt(before,0)} → ${fmt(after,0)}）`;
+ for(const [key] of RANGE_STATS){
+  const perUnit=maxWith(key,1)-before;
+  const equivalent=key===selected?amount:before>0&&perUnit>0?gain/perUnit:null;
+  document.getElementById('range-equivalent-'+key).textContent=equivalent===null?'—':`${fmt(equivalent,4)}${key.endsWith('Pct')?'%':''}`;
+ }
+}
+function character(){
+ let b=state.base, r={normal:buildContext(),br:buildContext(true)};
+ let parts=[['DEX（基本配點＋其他不在裝備表內的固定值）','base.dex'],['STR（副屬）','base.str'],['其他固定物攻（未列於裝備、技能與 Buff）','base.attack'],['DEX %（未列於裝備）','base.dexPct'],['STR %（未列於裝備）','base.strPct'],['物攻 %（未列於裝備）','base.atkPct'],['總傷害 %（未列於裝備）','base.damage'],['Boss 傷害 %（未列於裝備）','base.boss'],['爆擊率 %（未列於裝備）','base.critRate'],['平均額外爆傷 %（未列於裝備）','base.critDamage'],['最大爆傷 %（未列於裝備）','base.critMax'],['無視防禦 %（未列於裝備）','base.ied'],['最終傷害 %（未列於裝備）','base.finalDamage'],['武器係數（可自行調整）','base.weaponConstant'],['手動總熟練度 %（含基礎）','base.weaponMastery'],['角色／地圖／屬性其他倍率','base.levelMultiplier']];
+ return `<div class="notice"><span>⚠</span><span>此頁預填的是<b>示範數值</b>，不是你的真實能力。填「不含其他表格」的數值，才不會重複計算；武器熟練度請填遊戲內顯示的總熟練度百分比。</span></div>
+ <div class="panel"><div class="flex space"><div><h2>預測角色能力</h2><p class="desc">表攻與角色能力會隨裝備、傳授及 Buff 即時更新。面板無視防禦只計入角色自身的加成。</p></div><span class="pill">公式估算</span></div>
+ <div class="range-value"><span id="live-range">${fmt(r.normal.panelRangeMin,0)} ～ ${fmt(r.normal.panelRangeMax,0)}</span><small>常態最小表攻 ～ 最大表攻</small></div>
+ <div class="two"><div class="statline"><span>預測最小表攻</span><b id="live-min">${fmt(r.normal.panelRangeMin,0)}</b></div><div class="statline"><span>預測最大表攻</span><b id="live-max">${fmt(r.normal.panelRangeMax,0)}</b></div></div>
+ <div class="two"><div class="statline"><span>常態總 DEX</span><b id="live-normal-dex">${fmt(Math.trunc(r.normal.dex),0)}</b></div><div class="statline"><span>常態總 STR</span><b id="live-normal-str">${fmt(Math.trunc(r.normal.str),0)}</b></div></div>
+ <div class="statline"><span>爆發 Buff 下最小～最大表攻</span><b id="live-burst-range">${fmt(r.br.panelRangeMin,0)} ～ ${fmt(r.br.panelRangeMax,0)}</b></div>
+ <div class="two"><div class="statline"><span>爆發總 DEX</span><b id="live-br-dex">${fmt(Math.trunc(r.br.dex),0)}</b></div><div class="statline"><span>爆發總 STR</span><b id="live-br-str">${fmt(Math.trunc(r.br.str),0)}</b></div></div>
+ <h3>面板百分比</h3><div class="tablewrap"><table><thead><tr><th scope="col">能力</th><th scope="col">常態</th><th scope="col">爆發</th></tr></thead><tbody>
+ ${PANEL_STATS.map(([key,label])=>`<tr><td>${label}</td><td id="live-normal-${key}">${formatPanelStat(key,r.normal[key])}</td><td id="live-br-${key}">${formatPanelStat(key,r.br[key])}</td></tr>`).join('')}
+ </tbody></table></div></div>
+ <div class="panel"><h2>角色基礎能力</h2><p class="desc">自動熟練度採推定基礎 15% 加上專家或精通的技能熟練度。精通等級效果待確認時，沿用手動總熟練度。</p><div class="fields">${select('熟練度來源','base.masteryMode',state.base.masteryMode??'auto',[['auto','依技能自動計算'],['manual','使用手動總熟練度']])}${parts.map(([name,path])=>input(name,path,getPath(path))).join('')}</div><div class="sep"></div><button class="btn" data-action="resetBase">改成空白基礎值</button></div>
+ ${rangeComparison()}
+ <div class="panel"><h2>面板數值填寫原則</h2><p class="desc">將固定能力、裝備、傳授與常駐 Buff 分開輸入，頁面會即時顯示預測範圍。若與遊戲面板不一致，請自行調整武器係數、熟練度，並檢查是否漏填或重複加算。此工具不會自動拿實際表攻進行校正。</p></div>`;
+}
+
+const GEAR_STATS=['str','dex','attack','atkPct','allStatPct','boss','ied','finalDamage'];
+function gearStatFields(path,part,keys=GEAR_STATS){
+ return keys.map(k=>input(k==='allStatPct'?'全屬性 %':STAT_LABEL[k],path+'.'+k,num(part[k]))).join('');
+}
+function gearText(label,path,value){return '<label class="field"><span>'+label+'</span><input data-kind="text" data-path="'+path+'" value="'+esc(value)+'"></label>'}
+
+
+const GEAR_ICONS={badge:'🔰',medal:'🏅',pocket:'👝',cape:'🧣',gloves:'🧤',hat:'🎩',face:'🎭',eye:'👓',body:'👕',pants:'👖',necklace:'📿',belt:'➰',shoes:'👢',heart:'💛',earring:'💎',shoulder:'🛡️',weapon:'⚔️',secondary:'🗡️',totem:'🗿',set:'🧩'};
+function gearLabel(slot){
+ const icon=GEAR_ICONS[slot]||(slot.startsWith('ring')?'💍':'🐾');
+ return '<span aria-hidden="true">'+icon+'</span> '+esc(GEAR_SLOTS.find(([id])=>id===slot)?.[1]||'裝備');
+}
+
+let gearEditIndex=null;
+function gearEditor(){
+ if(gearEditIndex===null)return '';
+ const i=gearEditIndex,item=state.equipment[i],path='equipment.'+i;
+ if(!item)return '';
+ return '<dialog id="gearEditor" class="gear-dialog"><div class="flex space"><h2>'+gearLabel(item.slot)+'</h2><button class="btn" data-action="closeGear">完成</button></div><div class="fields">'+
+
+ (item.slot==='body'?select('衣服類型',path+'.bodyKind',item.bodyKind||'top',[['top','上衣＋褲裙'],['overall','套服（停用褲裙能力）']]):'')+
+ '</div><p class="small muted">填入此部位的能力合計。套裝加成統一填入「套裝 set」。</p><div class="gear-stat-grid">'+
+ gearStatFields(path,item,[...GEAR_STATS,'dexPct','strPct','damage','critRate','critDamage','critMax'])+'</div></dialog>';
+}
+function gearRows(){
+ return GEAR_SLOTS.map(([id])=>state.equipment.findIndex(x=>x.slot===id)).map(i=>{
+ const item=state.equipment[i],inactive=item.slot==='pants'&&suitEquipped();
+ const details=[...GEAR_STATS,'dexPct','strPct','damage','critRate','critDamage','critMax'].filter(k=>num(item[k])).map(k=>(k==='allStatPct'?'全屬性 %':STAT_LABEL[k])+' '+fmt(num(item[k]),2)).join(' · ');
+
+ return '<tr><td><button class="gear-name" data-action="editGear" data-index="'+i+'">'+gearLabel(item.slot)+'</button></td><td>'+checkbox('', 'equipment.'+i+'.enabled',item.enabled!==false)+'</td><td class="gear-summary">'+esc(details||'尚未填寫')+(inactive?'<small>套服已啟用，褲裙暫停計算</small>':'')+'</td><td><button class="btn sm" data-action="editGear" data-index="'+i+'">編輯</button></td></tr>';
+
+ }).join('');
+}
+
+function equipment(){
+ return '<div class="panel"><h2>裝備配裝</h2><p class="desc">點選部位或編輯，填入能力合計。全部套裝加成填在「套裝 set」。</p><table class="gear-table"><thead><tr><th>部位</th><th>啟用</th><th>能力合計</th><th></th></tr></thead><tbody>'+gearRows()+'</tbody></table></div>'+gearEditor();
+}
+function linkPage(){let sel=state.links.filter(x=>x.id!=='none');let keys=Object.keys(LINK);return `<div class="notice info">楓星傳授資料採社群整理的 Lv.1～5 數值，可編輯傳授種類與等級；若遊戲顯示與此不同，請以遊戲為準。<b>最多裝備三個傳授</b>。</div><div class="panel"><h2>傳授技能插槽</h2><div class="linkcards">${state.links.map((ln,i)=>{let eff=LINK[ln.id]?.effects[(ln.level||1)-1]||{};return `<div class="linkcard"><div class="kicker">傳授插槽 ${i+1}</div><label class="field" style="margin-top:9px"><span>效果</span><select data-path="links.${i}.id">${keys.map(k=>`<option value="${k}" ${ln.id===k?'selected':''}>${esc(LINK[k].name)}</option>`).join('')}</select></label><label class="field" style="margin-top:9px"><span>傳授等級</span><select data-path="links.${i}.level">${[1,2,3,4,5].map(k=>`<option value="${k}" ${Number(ln.level)===k?'selected':''}>Lv.${k}</option>`).join('')}</select></label><div class="small muted" style="margin-top:8px">${Object.keys(eff).map(k=>`${STAT_LABEL[k]||k} +${eff[k]}%`).join(' / ')||'未裝備'}</div></div>`}).join('')}</div></div><div class="panel"><h2>數值來源與注意</h2><p class="desc">槍神、機甲、黑騎等的「物攻」暫視為攻擊力百分比；「最大暴擊傷害」只以一半折算為平均暴傷近似，並非官方公式。傳授加成僅做方向性比較，不應取代遊戲實測。</p></div>`}
+function effectTable(kind){const columns=STATS;return ` <div class="tablewrap"><table><thead><tr><th>排序</th><th>啟用</th><th>來源</th><th>生效時段</th>${columns.map(k=>`<th>${STAT_LABEL[k]}</th>`).join('')}<th>移除</th></tr></thead><tbody>${state[kind].map((x,i)=>`<tr data-sort-kind="${kind}" data-sort-index="${i}"><td class="order-cell"><button class="handle" draggable="true" data-drag-kind="${kind}" data-drag-index="${i}" title="拖曳排序">⠿</button><button class="order-btn" data-action="moveItem" data-kind="${kind}" data-index="${i}" data-dir="-1" ${i===0?'disabled':''} title="上移">↑</button><button class="order-btn" data-action="moveItem" data-kind="${kind}" data-index="${i}" data-dir="1" ${i===state[kind].length-1?'disabled':''} title="下移">↓</button></td><td><input class="rowcheck" type="checkbox" data-path="${kind}.${i}.enabled" ${x.enabled?'checked':''}></td><td><input class="tdinput name" type="text" data-kind="text" data-path="${kind}.${i}.name" value="${esc(x.name)}"></td><td><select class="mini-select" data-path="${kind}.${i}.phase"><option value="always" ${x.phase==='always'?'selected':''}>常駐</option><option value="burst" ${x.phase==='burst'?'selected':''}>僅爆發</option></select></td>${columns.map(k=>`<td><input class="tdinput" type="number" data-path="${kind}.${i}.${k}" value="${num(x[k])}"></td>`).join('')}<td><button class="btn sm danger" data-action="removeBuff" data-kind="${kind}" data-index="${i}">刪除</button></td></tr>`).join('')}</tbody></table></div>`}
+function buffPage(){return `<div class="panel"><div class="flex space"><div><h2>藥水與其他 Buff</h2><p class="desc">常駐與爆發限定 Buff 分開計算。每個來源單獨輸入，無視防禦以逐來源乘法合成。拖曳 ↕ 或點 ↑／↓ 自訂列表順序。</p></div><div class="actionline"><button class="btn primary" data-action="addBuff" data-phase="always">＋ 常駐 Buff</button><button class="btn" data-action="addBuff" data-phase="burst">＋ 爆發 Buff</button><button class="btn" data-action="quickBuff">套用打王增益範例</button></div></div>
+${effectTable("buffs")}<div class="notice info"><span>ⓘ</span><span>如「狙擊標記」只影響後續招式，請在「技能與循環」頁單獨設定，勿再當作整段爆發 Buff，否則可能重複計算。團隊提供的無視防禦，可在 Boss 頁或 Buff 表設定，二選一即可。</span></div></div>`}
+function modeledSkillCard(name,skill){
+ const level=jobSkillLevel(name);
+ let current='未習得';
+ if(level>0){
+  if(skill.summary)current=skill.summary(level);
+  else if(skill.attackPerLevel)current='物攻 +'+jobSkillAttack(name);
+  else current=level===skill.max?'已達滿等':'此等級效果待確認';
+ }
+ return `${skill.description?`<p class="small muted">${esc(skill.description)}</p>`:''}
+ ${select('技能等級','jobSkillLevels.'+name,level,Array.from({length:skill.max+1},(_,value)=>[value,`Lv. ${value} / ${skill.max}`]))}
+ <div class="small" style="margin-top:8px">${esc(current)}</div>
+ ${skill.toggle?checkbox(skill.toggle,'jobSkillToggles.'+name,jobSkillToggle(name)):''}`;
+}
+function jobSkillsPage(){
+ const effects=state.jobSkillEffects.map((effect,index)=>({effect,index,name:jobSkillName(effect.name)}));
+ const editor=({effect,index})=>{
+  const path='jobSkillEffects.'+index;
+  return `<details><summary>${esc(effect.name)} · ${effect.enabled===false?'停用':'啟用'}</summary>
+  ${checkbox('計入能力',path+'.enabled',effect.enabled!==false)}
+  <div class="fields">${select('生效時段',path+'.phase',effect.phase,[['always','常駐'],['burst','僅爆發']])}
+  ${STATS.map(key=>input(STAT_LABEL[key],path+'.'+key,num(effect[key]))).join('')}</div></details>`;
+ };
+ const ranks=JOB_SKILLS.map((skills,rank)=>`<div class="panel"><h2>${rank} 轉技能</h2><div class="fields">
+ ${skills.map(name=>`<div class="callout"><b>${esc(name)}</b>
+ ${JOB_SKILL_DATA[name]?modeledSkillCard(name,JOB_SKILL_DATA[name]):effects.filter(entry=>entry.name===name).map(editor).join('')||'<div class="small muted">等待技能資料</div>'}</div>`).join('')}</div></div>`).join('');
+ const unclassified=effects.filter(entry=>!entry.name);
+ return '<div class="actionline"><button class="btn" data-action="skillRecommendations">查看推薦技能點</button></div>'+ranks+(unclassified.length?`<div class="panel"><h2>待分類技能</h2>${unclassified.map(editor).join('')}</div>`:'');
+}
+function skillPage(){
+ const s=rotationSkillSettings();
+ return `<div class="panel"><h2>集花力與爆發節奏</h2>
+ <p class="desc">傷害倍率取自職業技能配點。集花力沿用先前的施放時間、逐擊花力與接技公式，可在此調整。</p>
+ <div class="three"><div class="callout"><h3>A 四連擊</h3><div class="fields">
+ ${[0,1,2,3].map(i=>input(`第 ${i+1} 擊花力`,`skill.aCharge.${i}`,s.aCharge[i])).join('')}
+ ${input('完整施放時間（秒）','skill.aTime',s.aTime)}</div></div>
+ <div class="callout"><h3>B 花尖</h3><div class="fields">
+ ${input('單次花力','skill.bCharge',s.bCharge)}${input('完整施放時間（秒）','skill.bTime',s.bTime)}</div></div>
+ <div class="callout"><h3>C 四連擊＋花尖</h3><div class="fields">
+ ${input('接技時花尖花力','skill.bComboCharge',s.bComboCharge)}${input('接技時花尖每段倍率加成 %p','skill.bComboBonus',s.bComboBonus)}
+ ${input('完整施放時間（秒）','skill.abTime',s.abTime)}</div></div></div>
+ <div class="fields" style="margin-top:14px">${input('花力充能倍率','skill.chargeFactor',s.chargeFactor)}${input('花力上限','skill.chargeMax',s.chargeMax)}</div></div>
+ <div class="panel"><h2>爆發與狙擊</h2>
+ <p class="desc">奧義 10 秒共 80 發，每發 3 段。點花 10 秒共 12 發，每發 8 段。狙擊在開場與每隔 30 秒施放。</p>
+ <div class="fields">${input('狙擊標記增傷 %','skill.mark',s.mark)}
+ ${select('狙擊標記試算','skill.markMode',s.markMode,[['off','不計'],['multiplicative','當次爆發剩餘時間獨立乘算'],['additive','當次爆發剩餘時間加算']])}</div></div>`;
+}
+
+function bossPage(){let r={normal:buildContext(),br:buildContext(true)}, b=state.boss;return `<div class="panel"><h2>Boss 模擬目標</h2><p class="desc">自訂 Boss 防禦率、團隊減防與額外受傷倍率。表攻預測不包含 Boss 防禦；實戰傷害會包含。</p>
+ <div class="actionline">${[0,30,100,200,300].map(x=>`<button class="btn sm" data-action="pdr" data-value="${x}">${x}% 防禦</button>`).join('')}</div>
+ <div class="fields">${input('Boss 物理防禦率 %（PDR）','boss.pdr',b.pdr)}${input('團隊減防／額外無視來源 %','boss.partyIed',b.partyIed,'與裝備無視乘算；若已在 Buff 加入請填0')}${input('Boss 額外受傷倍率 %','boss.taken',b.taken,'獨立受傷乘區，預設0')}</div><div class="sep"></div>
+ <div class="statline"><span>目前合成無視防禦</span><b>${pct(r.normal.ied,2)}</b></div><div class="statline"><span>防禦修正乘區</span><b>×${fmt(r.normal.defense,3)}</b></div>${r.normal.defense<=0?'<div class="notice">目前設定導致 Boss 防禦修正為 0；請檢查 Boss 防禦率及無視設定。</div>':''}</div>
+ <div class="panel"><h2>公式預測的表攻（無校正）</h2><p class="desc">依角色能力、裝備、傳授、藥水與 Buff 計算。想讓結果對上遊戲面板，請在「角色能力」直接調整武器係數和武器熟練度。</p>
+ <div class="range-value"><span id="live-range">${fmt(r.normal.panelRangeMin,0)} ～ ${fmt(r.normal.panelRangeMax,0)}</span><small>預測常態最小 ～ 最大表攻</small></div>
+ <div class="statline"><span>常態最小表攻</span><b id="live-min">${fmt(r.normal.panelRangeMin,0)}</b></div>
+ <div class="statline"><span>常態最大表攻</span><b id="live-max">${fmt(r.normal.panelRangeMax,0)}</b></div>
+ <div class="statline"><span>爆發最小～最大表攻</span><b id="live-burst-range">${fmt(r.br.panelRangeMin,0)} ～ ${fmt(r.br.panelRangeMax,0)}</b></div>
+ <div class="statline"><span>武器係數／熟練度</span><b>${fmt(r.normal.weaponConstant,3)} ／ ${fmt(r.normal.weaponMastery,1)}%</b></div>
+ <div class="notice info">舊版 v3 的校正數值仍保留於本機設定備份，但 v4 <b>完全不使用校正係數</b>。本頁的面板值是推估，楓星職業專屬公式仍需以遊戲內面板核對。</div></div>`}
+function methodPage(){return `<div class="panel"><h2>怎麼開始？</h2>
+ <div class="step"><span class="circle">1</span><div><b>填角色能力</b><div class="muted">在「角色能力」輸入不含其他清單的 DEX、STR、攻擊及武器熟練度（%），自行調整武器係數。</div></div></div>
+ <div class="step"><span class="circle">2</span><div><b>輸入裝備並排序</b><div class="muted">逐件新增裝備、潛能與套裝效果，可拖曳或點 ↑／↓ 調整位置。</div></div></div>
+ <div class="step"><span class="circle">3</span><div><b>設定傳授與 Buff</b><div class="muted">選最多三個傳授，開關常駐／爆發 Buff；Buff 列也可自由排序。</div></div></div>
+ <div class="step"><span class="circle">4</span><div><b>比對表攻範圍</b><div class="muted">「傷害總覽」和「角色能力」會顯示預測最小～最大表攻。不同於舊版，無須校正按鈕，直接修改係數與熟練度。</div></div></div>
+ <div class="step"><span class="circle">5</span><div><b>比較接技、爆發和換裝</b><div class="muted">儲存基準後可對比換裝 DPS，並匯出 JSON 備份設定。升級版沿用原 v3 儲存鍵，原欄位不會被主動刪除。</div></div></div></div>
+ <div class="panel"><h2>公式與模型假設</h2>
+ <div class="formula">最大表攻 ≈ (4 × DEX + STR) × 物攻 × 武器係數 / 100 × 表攻增益乘區<br>
+ 最小表攻 ≈ 四捨五入（面板最大表攻 × 總武器熟練度%）<br>
+ 表攻增益乘區（暫定） ≈ max(0,1 + 一般傷害%) × 最終傷害乘積<br>
+ 打王每100%倍率期望傷害 ≈ (未乘表攻增益的最小與最大值之平均) × (1 + 一般傷害% + Boss傷害%) × 最終傷害 × 爆擊期望 × 防禦乘區 × 其他倍率<br>
+ 平均爆擊乘區 ≈ 1 + 爆率 × [0.35 + 平均額外爆傷% + 最大爆傷%/2]<br>
+ 總無視防禦 = 1 − ∏(1 − 每個來源的無視率)<br>Boss防禦乘區 ≈ max(0, 1 − Boss防禦率 × (1 − 無視防禦))<br>
+ 打王平均 DPS = 指定時間內的期望總傷害 ÷ 戰鬥時間</div>
+ <div class="notice"><span>⚠</span><span><b>這是可調的近似模型，不是楓星官方確證公式。</b> 依菖蒲遊戲面板比對，武器係數、熟練度與傷害加成是否真的影響角色視窗表攻，請以你的遊戲面板驗證。熟練度來源可在角色能力頁選擇。</span></div>
+ <h3>目前固定假設</h3><ul><li>單體 Boss、所有攻擊命中、無移動及機制中斷。</li><li>點花充能 ×1.5 視為常駐，不額外扣除刷新動畫時間。</li><li>每次爆發滿 20 秒、結束花力歸零，且三種打法使用相同爆發。</li><li>A/B/A+B 施放時間源自你提供的 60 FPS 錄影；暫不自動按攻速 Buff 縮短。</li><li>爆發依序為奧義 80 發與點花 12 發，各占 10 秒。狙擊從開場每 30 秒施放一次。</li><li>殘花以每次直擊的機率及冷卻算期望傷害。點花持續傷害每秒跳一次，連續命中刷新時間。</li></ul>
+ <h3>如何避免雙重計算</h3><p class="muted">若角色基礎能力已填入包含裝備與 Buff 的最終面板值，不要再於裝備／Buff 清單填同一項加成，否則會重複計算。Boss 傷害與無視防禦不直接當成一般表攻顯示。</p></div>
+ <div class="panel"><h2>資料保護</h2><p class="muted">同一瀏覽器與相同檔案網址可沿用 v3 的 localStorage 設定。首次讀取舊版設定會建立額外備份，但不同檔名的 file:// 網址不一定共享儲存資料。<b>升級前請務必先在舊版按「匯出 JSON」；新版再「匯入 JSON」，確認資料完整後才替換舊檔。</b></p></div>`}
+function updateLivePreview(){
+ const a=buildContext(), b=buildContext(true);
+ updateRangeComparison(a);
+ const items={
+  'header-range':`${fmt(a.panelRangeMin,0)} ～ ${fmt(a.panelRangeMax,0)}`,
+  'header-burst-range':`${fmt(b.panelRangeMin,0)} ～ ${fmt(b.panelRangeMax,0)}`,
+  'live-min':fmt(a.panelRangeMin,0),
+  'live-max':fmt(a.panelRangeMax,0),
+  'live-normal-dex':fmt(Math.trunc(a.dex),0),
+  'live-normal-str':fmt(Math.trunc(a.str),0),
+  'live-br-dex':fmt(Math.trunc(b.dex),0),
+  'live-br-str':fmt(Math.trunc(b.str),0),
+  'live-range':`${fmt(a.panelRangeMin,0)} ～ ${fmt(a.panelRangeMax,0)}`,
+  'live-burst-range':`${fmt(b.panelRangeMin,0)} ～ ${fmt(b.panelRangeMax,0)}`
+ };
+ for(const [key] of PANEL_STATS){
+  items[`live-normal-${key}`]=formatPanelStat(key,a[key]);
+  items[`live-br-${key}`]=formatPanelStat(key,b[key]);
+ }
+ for(const [i,set] of (state.equipmentSets||[]).entries()){const el=document.getElementById('gear-set-count-'+i);if(el)el.textContent='目前符合 '+state.equipment.filter(x=>x.enabled!==false&&x.slot!=='extra'&&String(x.name||'').trim()&&x.setName===set.name).length+' 件';}
+ for(const [id,value] of Object.entries(items)){const el=document.getElementById(id);if(el)el.textContent=value;}
+}
+function render(){let n=NAV.find(x=>x[0]===tab);document.getElementById('pageTitle').textContent=n[3];document.getElementById('pageDesc').textContent=n[4];document.getElementById('nav').innerHTML=NAV.map(x=>`<button class="navbtn ${x[0]===tab?'active':''}" data-tab="${x[0]}"><span class="emoji">${x[1]}</span>${x[2]}</button>`).join('');let pages={dashboard,character,equipment,links:linkPage,jobSkills:jobSkillsPage,buffs:buffPage,skills:skillPage,boss:bossPage,method:methodPage};document.getElementById('view').innerHTML=pages[tab]();updateLivePreview();save();const editor=document.getElementById('gearEditor');if(editor){editor.showModal();editor.addEventListener('cancel',()=>{gearEditIndex=null;render()})}}
+function toast(s){let t=document.getElementById('toast');t.textContent=s;t.style.display='block';clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(()=>t.style.display='none',3100)}
+function addGear(){state.equipment.push({name:'額外來源',slot:'extra',enabled:true,mergedStats:true})}
+function addBuff(phase){state.buffs.push({name:phase==='burst'?'爆發 Buff':'常駐藥水／Buff',phase,enabled:true})}
+function download(name,body,type){let blob=new Blob([body],{type});let u=URL.createObjectURL(blob);let a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),500)}
+function saveCsv(){
+ const {cycles,seconds}=compute();
+ const rows=[
+  ['比較項目',...cycles.map(c=>c.name)],
+  ['戰鬥秒數',...cycles.map(()=>seconds)],
+  ['花力充滿秒數',...cycles.map(c=>c.available&&Number.isFinite(c.elapsed)?c.elapsed:'')],
+  ['戰鬥總技能倍率 %',...cycles.map(c=>c.run?.multiplier??'')],
+  ['平均技能倍率 %／秒',...cycles.map(c=>c.run?c.run.multiplier/seconds:'')],
+  ['戰鬥總傷害',...cycles.map(c=>c.run?.dealt??'')],
+  ['平均 DPS',...cycles.map(c=>c.run?.dps??'')],
+  ['狙擊次數',...cycles.map(c=>c.run?.totals.snipe.count??'')],
+  ['殘花期望觸發次數',...cycles.map(c=>c.run?.procs??'')]
+ ];
+ const body=rows.map(row=>row.map(value=>'"'+String(value).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+ download('菖蒲_打王傷害比較.csv','\ufeff'+body,'text/csv;charset=utf-8');
+}
+
+function action(el){const cmd=el.dataset.action;if(!cmd)return;
+ if(cmd==='skillRecommendations'){tab='dashboard';render();document.getElementById('skill-recommendations').scrollIntoView();return}
+ if(cmd==='editGear'){gearEditIndex=Number(el.dataset.index);render();return}
+ if(cmd==='closeGear'){gearEditIndex=null;render();return}
+ if(cmd==='export'){download('菖蒲_傷害計算器設定.json',JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),data:state},null,2),'application/json');toast('設定已匯出')}
+ if(cmd==='import')document.getElementById('importfile').click();
+ if(cmd==='print')window.print();
+ if(cmd==='addSet'){state.equipmentSets.push({name:'新套裝 '+(state.equipmentSets.length+1),enabled:true,tiers:[2,3,4,5,6].map(pieces=>({pieces,enabled:true}))});render()}
+ if(cmd==='removeSet'){if(confirm('刪除此套裝效果？')){state.equipmentSets.splice(Number(el.dataset.index),1);render()}}
+ if(cmd==='addGear'){addGear();render()}if(cmd==='sampleGear'){if(state.equipment.length&&!confirm('載入參考裝備會取代目前的裝備清單，確定？'))return;state.equipment=sampleGear.map(x=>({enabled:true,...clone(x)}));state.equipmentSets=[];normalizeEquipment(state);render();toast('已載入舊截圖的六件裝備與套裝效果，請核對')}
+ if(cmd==='clearGear'){if(confirm('清空全部裝備資料？')){state.equipment=[];state.equipmentSets=[];normalizeEquipment(state);render()}}
+ if(cmd==='removeGear'){if(confirm('刪除此額外來源？')){state.equipment.splice(Number(el.dataset.index),1);render()}}
+ if(cmd==='addBuff'){addBuff(el.dataset.phase);render()}
+ if(cmd==='removeBuff'){state[el.dataset.kind==='jobSkillEffects'?'jobSkillEffects':'buffs'].splice(Number(el.dataset.index),1);render()}
+ if(cmd==='moveItem'){
+  const kind=el.dataset.kind,from=Number(el.dataset.index),to=from+Number(el.dataset.dir);
+  if(['equipment','buffs','jobSkillEffects'].includes(kind)&&Number.isInteger(from)&&Number.isInteger(to)&&to>=0&&to<state[kind].length){
+   const [item]=state[kind].splice(from,1);state[kind].splice(to,0,item);render();
+  }
+ }
+ if(cmd==='quickBuff'){state.buffs.push({name:'打王藥水範例（自行核對）',phase:'always',enabled:false,attack:20,ied:15},{name:'團隊攻擊 Buff 範例',phase:'always',enabled:false,attack:30},{name:'爆發期間攻擊與總傷範例（請改）',phase:'burst',enabled:false,attack:30,damage:30});render();toast('已加入未啟用的示範列，請自行確認數值')}
+ if(cmd==='finish'){state.calc.finish=el.dataset.value;render()}
+ if(cmd==='pdr'){state.boss.pdr=Number(el.dataset.value);render()}
+ if(cmd==='resetBase'){if(confirm('要把角色基礎能力都清成零嗎？')){for(const k of STATS)state.base[k]=0;state.base.weaponConstant=1.3;state.base.weaponMastery=60;state.base.levelMultiplier=1;render()}}
+ if(cmd==='snapshot'){let c=compute();state.baseline={label:new Date().toLocaleString('zh-TW'),seconds:c.seconds,bestDps:c.win?.run.dps??0,normal100:c.normal.per100,cycles:c.cycles.filter(x=>x.run).map(x=>({id:x.id,dps:x.run.dps}))};render();toast('已儲存換裝／Buff 比較基準')}
+ if(cmd==='clearBaseline'){state.baseline=null;render()}
+ if(cmd==='csv')saveCsv();
+}
+document.addEventListener('click',e=>{let tabEl=e.target.closest('[data-tab]');if(tabEl){tab=tabEl.dataset.tab;render();window.scrollTo({top:0,behavior:'smooth'});return}let a=e.target.closest('[data-action]');if(a)action(a)});
+function valueHandler(e){let el=e.target,path=el.dataset.path;if(!path)return;let value=el.type==='checkbox'?el.checked:el.dataset.kind==='text'||(el.tagName==='SELECT'&&!/^\d+(\.\d+)?$/.test(el.value))?el.value:el.type==='number'?num(el.value):/^\d+$/.test(el.value)&&/\.level$/.test(path)?Number(el.value):el.value;
+ // Select values that contain numeric levels become numbers.
+ if(el.tagName==='SELECT'&&/\.level$/.test(path))value=num(el.value);
+ if(/^equipment\.\d+\.slot$/.test(path)&&value!=='extra'){
+  const index=Number(path.split('.')[1]), old=state.equipment[index].slot;
+  const occupant=state.equipment.findIndex((x,i)=>i!==index&&x.slot===value);
+  if(occupant>=0)state.equipment[occupant].slot=old;
+ }
+ setPath(path,value);
+ if(/^equipment\.\d+\.slot$/.test(path))normalizeEquipment(state);
+ if(/^links\.\d+\.id$/.test(path)&&value!=='none'){
+   const idx=Number(path.split('.')[1]);
+   state.links.forEach((ln,j)=>{if(j!==idx&&ln.id===value)ln.id='none'});
+ }
+ save();updateLivePreview();if(el.tagName==='SELECT'||el.type==='checkbox'){render()}else if(tab==='dashboard'){const pos=el.selectionStart??0;let focusPath=path;render();let n=document.querySelector(`[data-path="${CSS.escape(focusPath)}"]`);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(err){}}}}
+document.addEventListener('change',e=>{if(e.target.dataset.path)valueHandler(e)});
+document.addEventListener('input',e=>{if(e.target.dataset.path&&e.target.tagName==='INPUT'&&e.target.type!=='checkbox'){valueHandler(e)}});
+let dragOrigin=null;
+document.addEventListener('dragstart',e=>{
+ const handle=e.target.closest?.('[data-drag-kind]');if(!handle)return;
+ const kind=handle.dataset.dragKind,index=Number(handle.dataset.dragIndex);
+ if(!['equipment','buffs','jobSkillEffects'].includes(kind))return;
+ dragOrigin={kind,index};e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',kind+':'+index);
+});
+document.addEventListener('dragover',e=>{
+ const row=e.target.closest?.('[data-sort-kind]');if(!row||!dragOrigin||row.dataset.sortKind!==dragOrigin.kind)return;
+ e.preventDefault();e.dataTransfer.dropEffect='move';
+ document.querySelectorAll('tr.drag-target').forEach(x=>x.classList.remove('drag-target'));
+ row.classList.add('drag-target');
+});
+document.addEventListener('drop',e=>{
+ const row=e.target.closest?.('[data-sort-kind]');if(!row||!dragOrigin||row.dataset.sortKind!==dragOrigin.kind)return;
+ e.preventDefault();const arr=state[dragOrigin.kind],from=dragOrigin.index,to=Number(row.dataset.sortIndex);
+ if(arr&&to!==from&&to>=0&&to<arr.length){const [item]=arr.splice(from,1);arr.splice(to,0,item);render();}
+ dragOrigin=null;document.querySelectorAll('tr.drag-target').forEach(x=>x.classList.remove('drag-target'));
+});
+document.addEventListener('dragend',()=>{dragOrigin=null;document.querySelectorAll('tr.drag-target').forEach(x=>x.classList.remove('drag-target'))});
+document.getElementById('importfile').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let data=JSON.parse(await f.text());let s=data.data||data;if(!s.skill||!s.base||!Array.isArray(s.equipment)||!Array.isArray(s.links)||!Array.isArray(s.buffs))throw Error('檔案格式不正確');state={...clone(INITIAL),...s,base:{...INITIAL.base,...s.base},boss:{...INITIAL.boss,...(s.boss||{})},skill:{...INITIAL.skill,...s.skill},calc:{...INITIAL.calc,...(s.calc||{})}};separateJobSkills(normalizeEquipment(state));tab='dashboard';render();toast('已匯入設定，已保留舊版資料')}catch(err){alert('匯入失敗：'+err.message)}e.target.value=''});
+render();
+</script>
+</body>
+</html>
