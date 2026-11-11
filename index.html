@@ -323,19 +323,21 @@ function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillL
 }
 const BURST_SECONDS=20, ULT_SHOTS=80, FLOWER_SHOTS=12, SNIPE_COOLDOWN=30, FIGHT_SECONDS=180;
 const NORMAL_FLOWER_COOLDOWN=30, NORMAL_FLOWER_CAST_TIME=1.5;
+const OPENERS=[['charge','從零集花力'],['burst','滿花力開場']];
+const TARGET_CAP={fourHit:4,tip:5,normalFlower:8,flower:8,dot:8,ult:1,snipe:1};
 function combos(s,levelFor){
  const a=s.aStages.reduce((total,value)=>total+num(value),0);
  const b=s.b1*s.b1hits+s.b2*s.b2hits;
  const connected=b+s.bComboBonus*(s.b1hits+s.b2hits);
  const aKnown=levelFor('火繩槍劍．連 III')===15, bKnown=levelFor('花尖')>0;
  const makeStages=(offsets,time,reference)=>s.aStages.map((damage,i)=>({
-  damage:num(damage),energy:num(s.aCharge[i]),offset:offsets[i]*time/reference
+  damage:num(damage),energy:num(s.aCharge[i]),offset:offsets[i]*time/reference,targetCap:TARGET_CAP.fourHit
  }));
  return [
   {id:'a',name:'A 四連擊',time:num(s.aTime),damage:a,available:aKnown,stages:makeStages([0,.283,.566,.983],num(s.aTime),1.392)},
-  {id:'b',name:'B 花尖',time:num(s.bTime),damage:b,available:bKnown,stages:[{damage:b,energy:num(s.bCharge),offset:0}]},
+  {id:'b',name:'B 花尖',time:num(s.bTime),damage:b,available:bKnown,stages:[{damage:b,energy:num(s.bCharge),offset:0,targetCap:TARGET_CAP.tip}]},
   {id:'ab',name:'C 四連擊＋花尖',time:num(s.abTime),damage:a+connected,available:aKnown&&bKnown,
-   stages:[...makeStages([0,.278,.559,.970],num(s.abTime),1.953),{damage:connected,energy:num(s.bComboCharge),offset:1.495*num(s.abTime)/1.953}]}
+   stages:[...makeStages([0,.278,.559,.970],num(s.abTime),1.953),{damage:connected,energy:num(s.bComboCharge),offset:1.495*num(s.abTime)/1.953,targetCap:TARGET_CAP.tip}]}
  ];
 }
 function chargePlan(combo,s){
@@ -360,7 +362,7 @@ function burstDetails(s,levelFor){
   shot:levelFor('狙擊')===20?(1695+secretSnipeBonus(levelFor('火繩槍劍秘傳')))*4:0
  };
 }
-function simulateFight(c,seconds,normal,burst,skills,levelFor){
+function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets}){
  if(!c.available)return null;
  const openingLevel=levelFor('花力開放');
  const canBurst=openingLevel>0;
@@ -368,8 +370,8 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor){
  const events=[];
  const flowerTimes=[];
  const burstWindows=[];
- const add=(time,source,multiplier,phase=false,markEnd=0)=>{
-  if(time<seconds&&multiplier>0)events.push({time,source,multiplier,phase,markEnd});
+ const add=(time,source,multiplier,phase=false,{targetCap=TARGET_CAP[source],markEnd=0,openingSnipe=false}={})=>{
+  if(time<seconds&&multiplier>0)events.push({time,source,multiplier,phase,markEnd,openingSnipe,targets:Math.min(targets,targetCap)});
  };
  const addFlower=(time,source,phase)=>{
   add(time,source,skills.flowerPerShot+(phase?skills.flowerBurstBonus:0),phase);
@@ -382,22 +384,25 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor){
   addFlower(time,'normalFlower',false);
   nextNormalFlower=time+NORMAL_FLOWER_COOLDOWN;
  };
- let charges=0,bursts=0,firstCharge=null,firstBurst=null;
+ const openWithBurst=opener==='burst'&&canBurst;
+ let charges=0,bursts=0,firstCharge=openWithBurst?0:null,firstBurst=null;
  const count=canBurst?c.count:Infinity;
  while(time<seconds){
-  let index=0;
-  for(;index<count&&time<seconds;index++){
+  if(!openWithBurst||firstBurst!==null){
+   let index=0;
+   for(;index<count&&time<seconds;index++){
+    castNormalFlower();
+    if(time>=seconds)break;
+    const stages=index===count-1?c.stages.slice(0,c.lastHits):c.stages;
+    for(const stage of stages)add(time+stage.offset,'charge',stage.damage,false,{targetCap:stage.targetCap});
+    time+=index===count-1?c.elapsed-(count-1)*c.time:c.time;
+   }
+   if(index!==count||time>seconds)break;
+   firstCharge??=time;
+   // 花力已滿時，先打出已轉好的常態點花，再用爆發重置冷卻。
    castNormalFlower();
    if(time>=seconds)break;
-   const stages=index===count-1?c.stages.slice(0,c.lastHits):c.stages;
-   for(const stage of stages)add(time+stage.offset,'charge',stage.damage);
-   time+=index===count-1?c.elapsed-(count-1)*c.time:c.time;
   }
-  if(index!==count||time>seconds)break;
-  firstCharge??=time;
-  // 花力已滿時，先打出已轉好的常態點花，再用爆發重置冷卻。
-  castNormalFlower();
-  if(time>=seconds)break;
   const burstStart=time, burstEnd=burstStart+BURST_SECONDS;
   firstBurst??=burstStart;
   burstWindows.push({start:burstStart,buffEnd:burstStart+buffSeconds,end:burstEnd});
@@ -423,7 +428,8 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor){
  for(;tick<=expiry&&tick<seconds;tick++)add(tick,'dot',skills.dotPerTick,!!activeBurst(tick));
  for(let time=0;skills.shot&&time<seconds;time+=SNIPE_COOLDOWN){
   const burstWindow=activeBurst(time);
-  add(time,'snipe',skills.shot,!!burstWindow,burstWindow?.end??0);
+  const openingSnipe=openWithBurst&&time===0;
+  add(time,'snipe',skills.shot,!!burstWindow&&!openingSnipe,{markEnd:burstWindow?.end??0,openingSnipe});
  }
  // 同時命中時先處理狙擊，讓後續爆發攻擊可使用既有標記選項。
  events.sort((a,b)=>a.time-b.time||Number(b.source==='snipe')-Number(a.source==='snipe'));
@@ -431,25 +437,30 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor){
  const procChance=level?(60+level)/100:0, procMultiplier=(170+3*level)*3;
  const cooldown=2-0.0433333*secret;
  const unlocks=[];
- let ready=1, unlockIndex=0, procs=0, markUntil=0;
+ let ready=1, unlockIndex=0, procs=0, markUntil=0, markMode='off';
  const totals={};
- for(const source of ['charge','ult','normalFlower','flower','dot','snipe','proc'])totals[source]={count:0,multiplier:0,damage:0};
- const record=(source,multiplier,damage,count=1)=>{
-  const row=totals[source];row.count+=count;row.multiplier+=multiplier;row.damage+=damage;
+ for(const source of ['charge','ult','normalFlower','flower','dot','snipe','proc'])totals[source]={count:0,multiplier:0,damage:0,primaryDamage:0};
+ const record=(source,multiplier,primaryDamage,otherDamage=0,count=1)=>{
+  const row=totals[source];
+  row.count+=count;row.multiplier+=multiplier;row.primaryDamage+=primaryDamage;row.damage+=primaryDamage+otherDamage;
  };
  for(const event of events){
   const context=event.phase?burst:normal;
   const critical=event.source==='snipe'?(1+context.critBonus)/context.critFactor:1;
-  const marked=event.phase&&event.time<markUntil&&event.source!=='snipe';
+  const marked=event.time<markUntil&&event.source!=='snipe';
   let mark=1;
-  if(marked&&state.skill.markMode==='multiplicative')mark=1+num(state.skill.mark)/100;
-  if(marked&&state.skill.markMode==='additive'){
+  if(marked&&markMode==='multiplicative')mark=1+num(state.skill.mark)/100;
+  if(marked&&markMode==='additive'){
    const factor=1+(context.damage+context.boss)/100;
    mark=Math.max(0,factor+num(state.skill.mark)/100)/Math.max(.001,factor);
   }
   const per100=context.per100/100;
-  record(event.source,event.multiplier,event.multiplier*per100*critical*mark);
-  if(event.source==='snipe'&&event.phase)markUntil=event.markEnd;
+  const perTargetDamage=event.multiplier*per100*critical;
+  record(event.source,event.multiplier*event.targets,perTargetDamage*mark,perTargetDamage*(event.targets-1));
+  if(event.source==='snipe'&&event.markEnd){
+   markUntil=event.markEnd;
+   markMode=event.openingSnipe&&state.skill.markMode==='off'?'multiplicative':state.skill.markMode;
+  }
   if(!procChance||event.source==='dot')continue;
   // 只將成功觸發的機率質量送入冷卻，失敗仍可在下一次攻擊觸發。
   while(unlockIndex<unlocks.length&&unlocks[unlockIndex].time<=event.time+1e-9){
@@ -458,23 +469,25 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor){
   const chance=clamp(ready,0,1)*procChance;
   ready-=chance;procs+=chance;
   if(chance>0)unlocks.push({time:event.time+cooldown,chance});
-  record('proc',procMultiplier*chance,procMultiplier*chance*per100*mark,chance);
+  record('proc',procMultiplier*chance,procMultiplier*chance*per100*mark,0,chance);
  }
  const dealt=Object.values(totals).reduce((sum,row)=>sum+row.damage,0);
+ const primaryDamage=Object.values(totals).reduce((sum,row)=>sum+row.primaryDamage,0);
  const multiplier=Object.values(totals).reduce((sum,row)=>sum+row.multiplier,0);
- return {totals,dealt,multiplier,charges,bursts,procs,firstCharge,firstBurst,dps:dealt/seconds};
+ return {totals,dealt,primaryDamage,multiplier,charges,bursts,procs,firstCharge,firstBurst,dps:dealt/seconds};
 }
-function compute(levels=state.jobSkillLevels){
+function compute(levels=state.jobSkillLevels,opener=state.calc.opener==='burst'?'burst':'charge'){
+ const targets=Math.max(1,Math.trunc(num(state.calc.targetCount)));
  const levelFor=name=>jobSkillLevel(name,levels);
  const normal=buildContext(false,'avg',state.base,levelFor);
  const br=buildContext(true,'avg',state.base,levelFor);
  const settings=rotationSkillSettings(levelFor), skills=burstDetails(settings,levelFor);
  const cycles=combos(settings,levelFor).map(combo=>{
   const plan=chargePlan(combo,settings);
-  return {...plan,run:simulateFight(plan,FIGHT_SECONDS,normal,br,skills,levelFor)};
+  return {...plan,run:simulateFight(plan,FIGHT_SECONDS,normal,br,skills,levelFor,{opener,targets})};
  });
  const win=cycles.filter(c=>c.run).sort((a,b)=>b.run.dps-a.run.dps)[0];
- return {normal,br,skills,cycles,win,seconds:FIGHT_SECONDS};
+ return {normal,br,skills,cycles,win,opener,targets,seconds:FIGHT_SECONDS};
 }
 const RECOMMENDABLE_SKILLS=[
  '精靈的祝福','女皇的祝福','花力強化(青)','花尖','點花','奧義．爆',
@@ -487,7 +500,7 @@ function recommendSkillPoints(result,rotation){
  return RECOMMENDABLE_SKILLS.flatMap(name=>{
   const level=jobSkillLevel(name);
   if(level>=JOB_SKILL_DATA[name].max)return [];
-  const trial=pick(compute({...state.jobSkillLevels,[name]:level+1}));
+  const trial=pick(compute({...state.jobSkillLevels,[name]:level+1},result.opener));
   if(!trial)return [];
   return [{name,level,trial,baseline,gain:trial.run.dealt-baseline.run.dealt}];
  }).sort((a,b)=>b.gain-a.gain);
@@ -511,10 +524,13 @@ function recommendationPanel(result){
 function metric(k,v,sub){return `<div class="metric"><label>${k}</label><strong>${v}</strong><em>${sub}</em></div>`}
 function barRows(data,key,suffix='',decimal=1){let max=Math.max(0,...data.map(x=>x[key]));return data.map(x=>`<div class="chartrow"><div>${x.name}</div><div class="track"><div class="bar ${x.id}" style="width:${max?Math.max(0,x[key])/max*100:0}%"></div></div><div class="right"><b>${fmt(x[key],decimal)}</b>${suffix}</div></div>`).join('')}
 function dashboard(){
- const result=compute(),{normal,cycles,win,seconds,skills}=result;
+ const result=compute(),{normal,cycles,win,seconds,skills,opener,targets}=result;
+ const other=compute(state.jobSkillLevels,opener==='burst'?'charge':'burst');
+ const [fromZero,fromFull]=opener==='charge'?[result,other]:[other,result];
  const played=cycles.filter(c=>c.run);
  const sources=[['charge','集花力攻擊'],['normalFlower','非爆發點花'],['ult','奧義．爆'],['flower','爆發點花直擊'],['dot','點花持續傷害'],['snipe','狙擊'],['proc','殘花期望觸發']];
- const baseline=state.baseline?.seconds===seconds?state.baseline:null;
+ const saved=state.baseline;
+ const baseline=saved?.seconds===seconds&&(saved.opener??'charge')===opener&&(saved.targets??1)===targets?saved:null;
  const baselineRows=baseline?played.map(c=>{
   const prev=baseline.cycles?.find(x=>x.id===c.id)?.dps;
   return `<div class="statline"><span>${c.name}</span><b>${prev>0?pct((c.run.dps/prev-1)*100,2):'—'}</b></div>`;
@@ -524,7 +540,17 @@ function dashboard(){
  ${metric('常態每 100% 平均傷害',fmt(normal.per100,0),'含爆擊期望與 Boss 防禦')}
  ${metric('180 秒最高 DPS',fmt(win?.run.dps,0),win?.name??'請確認職業技能等級')}</div>
  <div class="panel"><div class="flex space"><div><h2>180 秒打王傷害模擬</h2><p class="desc">花力充滿後先打 10 秒奧義（80 發），再打 10 秒點花（12 發）。狙擊開場使用，之後每 30 秒使用一次。</p></div>
- <div class="fields">${input('Boss 物理防禦率 %','boss.pdr',state.boss.pdr)}</div></div>
+ <div class="fields">${input('怪物數量','calc.targetCount',targets,'兩種開場共用，假設怪物全程在攻擊範圍內且防禦相同','1')}
+ ${input('Boss 物理防禦率 %','boss.pdr',state.boss.pdr)}</div></div>
+ <div class="tablewrap"><table><thead><tr><th>180 秒比較</th><th>從零集花力</th><th>滿花力開場</th><th>開場爆發差異</th></tr></thead><tbody>
+ ${fromZero.cycles.map((combo,i)=>{
+  const zero=combo.run, full=fromFull.cycles[i].run;
+  const cell=run=>run?`<b>${fmt(run.dealt,0)}</b><br>${fmt(run.dps,0)} DPS`:'—';
+  const gain=zero?.dealt>0&&full?(full.dealt/zero.dealt-1)*100:null;
+  return `<tr><td>${combo.name}</td><td>${cell(zero)}</td><td>${cell(full)}</td><td>${gain===null?'—':(gain>0?'+':'')+pct(gain,2)}</td></tr>`;
+ }).join('')}</tbody></table></div>
+ <p class="desc" style="margin-top:12px">滿花力進場先狙擊，再於第 0 秒開爆發。開場標記估算至第一次爆發結束，只有主目標吃到增傷。</p>
+ ${select('明細與技能點推薦使用的開場','calc.opener',opener,OPENERS)}
  <div class="actionline"><button class="btn sm ${state.calc.finish==='full'?'primary':''}" data-action="finish" data-value="full">最後一套完整施放</button>
  <button class="btn sm ${state.calc.finish==='partial'?'primary':''}" data-action="finish" data-value="partial">充滿瞬間切爆發（估算）</button>
  <button class="btn sm" data-action="snapshot">儲存當前比較基準</button><button class="btn sm" data-action="csv">匯出比較 CSV</button></div>
@@ -536,7 +562,8 @@ function dashboard(){
   ['爆發開始／完成次數',c=>c.run.charges+'／'+c.run.bursts],
   ['戰鬥總技能倍率',c=>pct(c.run.multiplier,1)],
   ['平均技能倍率（%／秒）',c=>pct(c.run.multiplier/seconds,1)+'/秒'],
-  ['預估總傷害',c=>fmt(c.run.dealt,0)],['預估平均 DPS',c=>fmt(c.run.dps,0)]
+  ['預估總傷害',c=>fmt(c.run.dealt,0)],['預估平均 DPS',c=>fmt(c.run.dps,0)],
+  ['主目標平均 DPS',c=>fmt(c.run.primaryDamage/seconds,0)]
  ].map(([label,format])=>`<tr><td>${label}</td>${cycles.map(c=>`<td>${c.run?format(c):'—'}</td>`).join('')}</tr>`).join('')}
  </tbody></table></div>
  ${cycles.some(c=>!c.available)?'<p class="small muted">A／C 需要滿等的火繩槍劍．連 III，B／C 需要習得花尖。四連擊低等級倍率待確認。</p>':''}
@@ -550,7 +577,8 @@ function dashboard(){
   const row=c.run?.totals[key];
   return `<td>${row?`${fmt(row.count,key==='proc'?2:0)} 次 · ${pct(row.multiplier/seconds,1)}/秒<br><b>${fmt(row.damage/seconds,1)} DPS</b> · ${c.run.dealt>0?pct(row.damage/c.run.dealt*100,2):'—'}</td>`:'—'}</td>`;
  }).join('')}</tr>`).join('')}</tbody></table></div>
- <p class="small muted">非爆發點花在一套連招結束後蓄能 1.5 秒，命中後開始 30 秒冷卻，開啟爆發會重置。花力仍依 A、B、C 的原公式計算。點花持續傷害每秒跳一次，連續命中刷新時間。</p>
+ <p class="small muted">每次命中目標上限為四連擊 4、花尖 5、點花與其持續傷害 8，奧義、狙擊、殘花各 1。C 的四連擊和花尖分別套用上限。集花力與殘花觸發仍按出招次數計算。</p>
+ <p class="small muted">非爆發點花在一套連招結束後蓄能 1.5 秒，命中後開始 30 秒冷卻，開啟爆發會重置。點花持續傷害每秒跳一次，連續命中刷新時間。</p>
  <p class="small muted">奧義與點花在各自的 10 秒內均勻發射。狙擊假設每次都先翻滾，秘傳加成加在每段倍率上，翻滾與施放時間暫視為 0。爆發增益最多覆蓋本輪 20 秒。殘花每次直擊擲一次，成功才進入冷卻，持續傷害跳數不觸發。</p></div>
  ${baseline?`<div class="panel"><div class="flex space"><h2>與基準的 DPS 差異</h2><button class="btn sm" data-action="clearBaseline">清除基準</button></div>${baselineRows}</div>`:''}`;
 }
@@ -683,7 +711,7 @@ function skillPage(){
  <div class="panel"><h2>爆發與狙擊</h2>
  <p class="desc">奧義 10 秒共 80 發，每發 3 段。點花 10 秒共 12 發，每發 8 段。狙擊在開場與每隔 30 秒施放。</p>
  <div class="fields">${input('狙擊標記增傷 %','skill.mark',s.mark)}
- ${select('狙擊標記試算','skill.markMode',s.markMode,[['off','不計'],['multiplicative','當次爆發剩餘時間獨立乘算'],['additive','當次爆發剩餘時間加算']])}</div></div>`;
+ ${select('狙擊標記試算','skill.markMode',s.markMode,[['off','只計滿花力的開場狙擊，獨立乘算'],['multiplicative','當次爆發剩餘時間獨立乘算'],['additive','當次爆發剩餘時間加算']])}</div></div>`;
 }
 
 function bossPage(){let r={normal:buildContext(),br:buildContext(true)}, b=state.boss;return `<div class="panel"><h2>Boss 模擬目標</h2><p class="desc">自訂 Boss 防禦率、團隊減防與額外受傷倍率。表攻預測不包含 Boss 防禦；實戰傷害會包含。</p>
@@ -712,7 +740,7 @@ function methodPage(){return `<div class="panel"><h2>怎麼開始？</h2>
  總無視防禦 = 1 − ∏(1 − 每個來源的無視率)<br>Boss防禦乘區 ≈ max(0, 1 − Boss防禦率 × (1 − 無視防禦))<br>
  打王平均 DPS = 指定時間內的期望總傷害 ÷ 戰鬥時間</div>
  <div class="notice"><span>⚠</span><span><b>這是可調的近似模型，不是楓星官方確證公式。</b> 依菖蒲遊戲面板比對，武器係數、熟練度與傷害加成是否真的影響角色視窗表攻，請以你的遊戲面板驗證。熟練度來源可在角色能力頁選擇。</span></div>
- <h3>目前固定假設</h3><ul><li>單體 Boss、所有攻擊命中、無移動及機制中斷。</li><li>充能倍率 ×1.5 視為常駐。非爆發點花占用 1.5 秒，花力由 A、B、C 的攻擊提供。</li><li>每次爆發滿 20 秒、結束花力歸零，且三種打法使用相同爆發。</li><li>A/B/A+B 施放時間源自你提供的 60 FPS 錄影；暫不自動按攻速 Buff 縮短。</li><li>爆發依序為奧義 80 發與點花 12 發，各占 10 秒。狙擊從開場每 30 秒施放一次。</li><li>殘花以每次直擊的機率及冷卻算期望傷害。點花持續傷害每秒跳一次，連續命中刷新時間。</li></ul>
+ <h3>目前固定假設</h3><ul><li>所有怪物防禦相同，全程在攻擊範圍內。</li><li>充能倍率 ×1.5 視為常駐。非爆發點花占用 1.5 秒，花力由 A、B、C 的攻擊提供。</li><li>每次爆發滿 20 秒、結束花力歸零，且三種打法使用相同爆發。</li><li>A/B/A+B 施放時間源自你提供的 60 FPS 錄影；暫不自動按攻速 Buff 縮短。</li><li>爆發依序為奧義 80 發與點花 12 發，各占 10 秒。狙擊從開場每 30 秒施放一次。</li><li>殘花以每次直擊的機率及冷卻算期望傷害。點花持續傷害每秒跳一次，連續命中刷新時間。</li></ul>
  <h3>如何避免雙重計算</h3><p class="muted">若角色基礎能力已填入包含裝備與 Buff 的最終面板值，不要再於裝備／Buff 清單填同一項加成，否則會重複計算。Boss 傷害與無視防禦不直接當成一般表攻顯示。</p></div>
  <div class="panel"><h2>資料保護</h2><p class="muted">同一瀏覽器與相同檔案網址可沿用 v3 的 localStorage 設定。首次讀取舊版設定會建立額外備份，但不同檔名的 file:// 網址不一定共享儲存資料。<b>升級前請務必先在舊版按「匯出 JSON」；新版再「匯入 JSON」，確認資料完整後才替換舊檔。</b></p></div>`}
 function updateLivePreview(){
@@ -743,16 +771,22 @@ function addGear(){state.equipment.push({name:'額外來源',slot:'extra',enable
 function addBuff(phase){state.buffs.push({name:phase==='burst'?'爆發 Buff':'常駐藥水／Buff',phase,enabled:true})}
 function download(name,body,type){let blob=new Blob([body],{type});let u=URL.createObjectURL(blob);let a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),500)}
 function saveCsv(){
- const {cycles,seconds}=compute();
+ const cycles=OPENERS.flatMap(([opener,label])=>{
+  const result=compute(state.jobSkillLevels,opener);
+  return result.cycles.map(combo=>({...combo,openerLabel:label,targets:result.targets,seconds:result.seconds}));
+ });
  const rows=[
   ['比較項目',...cycles.map(c=>c.name)],
-  ['戰鬥秒數',...cycles.map(()=>seconds)],
+  ['開場方式',...cycles.map(c=>c.openerLabel)],
+  ['怪物數量',...cycles.map(c=>c.targets)],
+  ['戰鬥秒數',...cycles.map(c=>c.seconds)],
   ['首次花力充滿秒數',...cycles.map(c=>c.run?.firstCharge??'')],
   ['首次爆發開始秒數',...cycles.map(c=>c.run?.firstBurst??'')],
   ['戰鬥總技能倍率 %',...cycles.map(c=>c.run?.multiplier??'')],
-  ['平均技能倍率 %／秒',...cycles.map(c=>c.run?c.run.multiplier/seconds:'')],
+  ['平均技能倍率 %／秒',...cycles.map(c=>c.run?c.run.multiplier/c.seconds:'')],
   ['戰鬥總傷害',...cycles.map(c=>c.run?.dealt??'')],
   ['平均 DPS',...cycles.map(c=>c.run?.dps??'')],
+  ['主目標平均 DPS',...cycles.map(c=>c.run?c.run.primaryDamage/c.seconds:'')],
   ['狙擊次數',...cycles.map(c=>c.run?.totals.snipe.count??'')],
   ['非爆發點花次數',...cycles.map(c=>c.run?.totals.normalFlower.count??'')],
   ['殘花期望觸發次數',...cycles.map(c=>c.run?.procs??'')]
@@ -795,7 +829,7 @@ function action(el){const cmd=el.dataset.action;if(!cmd)return;
  if(cmd==='finish'){state.calc.finish=el.dataset.value;render()}
  if(cmd==='pdr'){state.boss.pdr=Number(el.dataset.value);render()}
  if(cmd==='resetBase'){if(confirm('要把角色基礎能力都清成零嗎？')){for(const k of STATS)state.base[k]=0;state.base.weaponConstant=1.3;state.base.weaponMastery=60;state.base.levelMultiplier=1;render()}}
- if(cmd==='snapshot'){let c=compute();state.baseline={label:new Date().toLocaleString('zh-TW'),seconds:c.seconds,bestDps:c.win?.run.dps??0,normal100:c.normal.per100,cycles:c.cycles.filter(x=>x.run).map(x=>({id:x.id,dps:x.run.dps}))};render();toast('已儲存換裝／Buff 比較基準')}
+ if(cmd==='snapshot'){let c=compute();state.baseline={label:new Date().toLocaleString('zh-TW'),seconds:c.seconds,opener:c.opener,targets:c.targets,bestDps:c.win?.run.dps??0,normal100:c.normal.per100,cycles:c.cycles.filter(x=>x.run).map(x=>({id:x.id,dps:x.run.dps}))};render();toast('已儲存換裝／Buff 比較基準')}
  if(cmd==='clearBaseline'){state.baseline=null;render()}
  if(cmd==='csv')saveCsv();
 }
