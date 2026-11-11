@@ -28,8 +28,8 @@
 const VERSION=5, KEY='ayame_lab_20261103_v2'; // 同一儲存鍵，保留 v3 設定
 const NAV=[['dashboard','📊','傷害總覽','傷害比較總覽','比較 A、B、A+B 的完整打王循環與傷害效率。'],['character','🎯','角色能力','角色基本能力','填入菖蒲的 DEX、STR、攻擊力、爆擊及其他常態能力。'],['equipment','🛡️','裝備配裝','裝備能力與套裝','逐件編輯裝備、潛能、卷軸及套裝加成，支援匯入參考套裝。'],['links','🔗','傳授技能','傳授技能配置','最多選擇三個傳授，依等級自動加入屬性。'],['jobSkills','📚','職業技能','菖蒲職業技能','依轉職階段查看技能。'],['buffs','🧪','藥水・Buff','增益與消耗品','加入常駐或僅爆發期間啟用的能力，並可快速切換。'],['skills','⚔️','技能與循環','技能倍率與動作時間','你錄影量測的出招速度與滿等技能倍率都可以修改。'],['boss','👑','Boss 與表攻','Boss 防禦與表攻預測','調整防禦率，核對預測最小與最大表攻，不使用校正係數。'],['method','📖','說明與驗證','使用說明與計算假設','了解公式、限制、版本差異，以及如何讓數字更準。']];
 const LINK={none:{name:'不裝備',effects:[]},boss:{name:'英雄／劍豪・Boss 傷害',effects:[{boss:2},{boss:4},{boss:6},{boss:8},{boss:10}]},ied:{name:'拳霸／重砲指揮官・無視防禦',effects:[{ied:3},{ied:6},{ied:9},{ied:12},{ied:15}]},atk:{name:'槍神／機甲戰神・物攻%',effects:[{atkPct:1},{atkPct:3},{atkPct:5},{atkPct:7},{atkPct:10}]},hpAtk:{name:'黑騎／狂狼勇士・物攻%',effects:[{atkPct:1},{atkPct:2},{atkPct:3},{atkPct:4},{atkPct:5}]},crit:{name:'箭神／狂豹獵人・爆率＋傷害',effects:[{critRate:1,damage:1},{critRate:2,damage:2},{critRate:4,damage:3},{critRate:6,damage:4},{critRate:8,damage:5}]},critMax:{name:'神射手／菖蒲・最大爆傷＋傷害',effects:[{critMax:1,damage:1},{critMax:3,damage:1},{critMax:5,damage:2},{critMax:7,damage:2},{critMax:9,damage:3}]}};
-const STATS=['dex','str','attack','dexPct','strPct','atkPct','damage','boss','critRate','critDamage','critMax','ied','finalDamage'];
-const STAT_LABEL={dex:'DEX',str:'STR',attack:'物攻 +',dexPct:'DEX %',strPct:'STR %',atkPct:'物攻 %',damage:'傷害 %',boss:'Boss %',critRate:'爆擊率 %',critDamage:'平均額外爆傷 %',critMax:'最大爆傷 %',ied:'無視防禦 %',finalDamage:'最終傷害 %'};
+const STATS=['dex','str','attack','hp','dexPct','strPct','atkPct','hpPct','damage','boss','critRate','critDamage','critMax','ied','finalDamage'];
+const STAT_LABEL={dex:'DEX',str:'STR',attack:'物攻 +',hp:'最大 HP +',dexPct:'DEX %',strPct:'STR %',atkPct:'物攻 %',hpPct:'最大 HP %',allStatPct:'全屬性 %',damage:'傷害 %',boss:'Boss %',critRate:'爆擊率 %',critDamage:'平均額外爆傷 %',critMax:'最大爆傷 %',ied:'無視防禦 %',finalDamage:'最終傷害 %'};
 const sampleGear=[
 {name:'俠客圖斯帽子',dex:22,str:27},
 {name:'俠客圖斯大衣',dex:32,str:29,attack:2},
@@ -55,11 +55,7 @@ function normalizeEquipment(s){
  for(const item of s.equipment){
   if(!item.mergedStats){
    const parts=[{...item,enabled:true},item.scroll,item.potential,item.additional].filter(Boolean);
-   const combined=sumEffects(parts);
-   for(const key of STATS)item[key]=combined.total[key];
-   item.ied=(1-combined.ies.reduce((v,x)=>v*(1-x),1))*100;
-   item.finalDamage=(combined.finals.reduce((v,x)=>v*(1+x),1)-1)*100;
-   item.allStatPct=parts.reduce((v,x)=>v+num(x.allStatPct),0);
+   Object.assign(item,gearTotals(parts));
    item.legacyDetails={scroll:item.scroll,potential:item.potential,additional:item.additional};
    delete item.scroll;delete item.potential;delete item.additional;item.mergedStats=true;
   }
@@ -76,21 +72,25 @@ function normalizeEquipment(s){
  }
  for(const [slot] of GEAR_SLOTS)if(!used.has(slot))s.equipment.push({slot,name:'',enabled:true,mergedStats:true});
  s.equipment=s.equipment.filter(x=>GEAR_SLOTS.some(([id])=>id===x.slot));
+ for(const item of s.equipment){
+  item.potential??={};
+  item.additional??={};
+ }
  s.equipmentSets=[];
- s.equipmentSchema=2;
+ s.equipmentSchema=3;
  return s;
 }
 function suitEquipped(){return state.equipment.some(x=>x.slot==='body'&&x.enabled!==false&&x.bodyKind==='overall')}
+function equipmentParts(sections){
+ const wearingSuit=suitEquipped();
+ return state.equipment
+  .filter(item=>item.enabled!==false&&!(item.slot==='pants'&&wearingSuit))
+  .flatMap(item=>sections.map(section=>section==='base'?item:item[section]).filter(Boolean));
+}
 function equipmentEffects(){
- const entries=[];
- for(const item of state.equipment){
-  if(item.enabled===false||(item.slot==='pants'&&suitEquipped()))continue;
-  for(const part of [item]){
-   if(!part)continue;
-   entries.push({...part,dexPct:num(part.dexPct)+num(part.allStatPct),strPct:num(part.strPct)+num(part.allStatPct)});
-  }
- }
- return entries;
+ return equipmentParts(['base','potential','additional']).map(part=>({
+  ...part,dexPct:num(part.dexPct)+num(part.allStatPct),strPct:num(part.strPct)+num(part.allStatPct)
+ }));
 }
 
 const JOB_SKILLS=[
@@ -117,7 +117,7 @@ const JOB_SKILL_DATA={
  '幸運骰子':{max:20,description:'MP 60。隨機增益持續 180 秒，擲出 1 時沒有增益。冷卻 200 秒，武陵道場套用傷害增加效果。'},
  '復仇之心':{max:20,effect:{attack:20},toggle:'計入復仇之心',description:'MP 10。240 秒內隊伍物攻、魔攻各 +20。'},
  '殘影':{max:15,effect:{damage:20},toggle:'計入成功迴避後的增傷',description:'額外迴避機率 25%，迴避成功後 13 秒內傷害 +20%。'},
- '花力強化(朱)':{max:5,effect:{critRate:20},burstEffect:{attack:20},description:'常態及爆發皆增加 20 個百分點爆擊率。花力全開時物攻 +20、貫破每段 +165%p、最大 HP +5%。'},
+ '花力強化(朱)':{max:5,effect:{critRate:20},burstEffect:{attack:20,hpPct:5},description:'常態及爆發皆增加 20 個百分點爆擊率。花力全開時物攻 +20、貫破每段 +165%p、最大 HP +5%。'},
  '花尖':{max:20,summary:level=>{
   const {b1,b2}=fourthJobMultipliers(level,0,0,0);
   return `${b1}% × 2 ＋ ${b2}% × 3`;
@@ -297,6 +297,8 @@ function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillL
  const {total:t,ies,finals}=sumEffects(ents);
  const dex=(num(b.dex)+t.dex)*(1+(num(b.dexPct)+t.dexPct)/100), str=(num(b.str)+t.str)*(1+(num(b.strPct)+t.strPct)/100);
  const attack=(num(b.attack)+t.attack)*(1+(num(b.atkPct)+t.atkPct)/100);
+ const baseHp=num(b.hp);
+ const hp=baseHp>0?Math.max(0,Math.floor((baseHp+t.hp)*(1+(num(b.hpPct)+t.hpPct)/100)+1e-9)):null;
  const damage=num(b.damage)+t.damage;
  const boss=num(b.boss)+ents.reduce((total,effect)=>effect.enabled===false?total:total+num(effect.bossDamageBonus),t.boss);
  let iedRemain=(1-clamp(num(b.ied),0,100)/100);
@@ -325,7 +327,7 @@ function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillL
  const panelAverageFactor=panelRangeMax>0?(panelRangeMax+panelRangeMin)/(2*panelRangeMax):0;
  const multi=Math.max(0,1+(damage+boss)/100)*finalFactor*critFactor*defense*(1+num(state.boss.taken)/100)*num(b.levelMultiplier);
  const averageRaw=(rawRange+rawMin)/2;
- return {dex,str,attack,damage,boss,ied,panelIed,defense,finalFactor,critRate,minCrit,maxCrit,critBonus,critFactor,rawRange,rawMin,
+ return {dex,str,attack,hp,damage,boss,ied,panelIed,defense,finalFactor,critRate,minCrit,maxCrit,critBonus,critFactor,rawRange,rawMin,
   predictedPanel:panelRangeMax,predictedMin:panelRangeMin,panelRangeMax,panelRangeMin,panelAverageFactor,
   weaponConstant,weaponMastery,multi,per100:Math.max(0,averageRaw*multi),iedRemain};
 }
@@ -635,8 +637,11 @@ function dashboard(){
  ${baseline?`<div class="panel"><div class="flex space"><h2>與基準的 DPS 差異</h2><button class="btn sm" data-action="clearBaseline">清除基準</button></div>${baselineRows}</div>`:''}`;
 }
 
-const PANEL_STATS=[['damage','傷害'],['boss','Boss 攻擊力'],['panelIed','無視防禦'],['critRate','爆擊率'],['minCrit','最小爆擊'],['maxCrit','最大爆擊']];
-function formatPanelStat(key,value){return pct(key==='panelIed'?Math.floor(Number(value.toFixed(10))):value,0)}
+const PANEL_STATS=[['hp','最大 HP'],['damage','傷害'],['boss','Boss 攻擊力'],['panelIed','無視防禦'],['critRate','爆擊率'],['minCrit','最小爆擊'],['maxCrit','最大爆擊']];
+function formatPanelStat(key,value){
+ if(key==='hp')return value===null?'待填基礎 HP':fmt(value,0);
+ return pct(key==='panelIed'?Math.floor(Number(value.toFixed(10))):value,0);
+}
 const RANGE_STATS=[['dex','DEX'],['dexPct','DEX %'],['attack','物攻'],['atkPct','物攻 %']];
 function rangeComparison(){
  return `<div class="panel"><h2>表攻提升比較</h2><p class="desc">以目前常態配裝的最大表攻比較。百分比欄位以百分點輸入，例如 DEX % 填 1 代表增加 1 個百分點。</p>
@@ -660,27 +665,47 @@ function updateRangeComparison(normal){
   document.getElementById('range-equivalent-'+key).textContent=equivalent===null?'—':`${fmt(equivalent,4)}${key.endsWith('Pct')?'%':''}`;
  }
 }
+function potentialSummary(){
+ const potential=equipmentParts(['potential']);
+ const additional=equipmentParts(['additional']);
+ const totals=[gearTotals(potential),gearTotals(additional),gearTotals([...potential,...additional])];
+ const rows=GEAR_STATS.filter(key=>totals.some(total=>Math.abs(total[key])>=1e-9));
+ const display=(key,value)=>Math.abs(value)<1e-9?'—':(value>0?'+':'')+(GEAR_FLAT_STATS.includes(key)?fmt(value,2):pct(value,2));
+ return `<div class="panel"><h2>裝備潛能加成</h2><p class="desc">只統計已啟用裝備的潛能與附加潛能。全屬性 % 另列，計算時會併入 STR 和 DEX。</p>
+ ${rows.length?`<div class="tablewrap"><table><thead><tr><th scope="col">能力</th><th scope="col">潛能</th><th scope="col">附加潛能</th><th scope="col">合計</th></tr></thead>
+ <tbody>${rows.map(key=>`<tr><td>${STAT_LABEL[key]}</td>${totals.map(total=>`<td>${display(key,total[key])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<p class="small muted">尚未填寫潛能或附加潛能。</p>'}</div>`;
+}
 function character(){
  let b=state.base, r={normal:buildContext(),br:buildContext(true)};
  let parts=[['DEX（基本配點＋其他不在裝備表內的固定值）','base.dex'],['STR（副屬）','base.str'],['其他固定物攻（未列於裝備、技能與 Buff）','base.attack'],['DEX %（未列於裝備）','base.dexPct'],['STR %（未列於裝備）','base.strPct'],['物攻 %（未列於裝備）','base.atkPct'],['總傷害 %（未列於裝備）','base.damage'],['Boss 傷害 %（未列於裝備）','base.boss'],['爆擊率 %（未列於裝備）','base.critRate'],['平均額外爆傷 %（未列於裝備）','base.critDamage'],['最大爆傷 %（未列於裝備）','base.critMax'],['無視防禦 %（未列於裝備）','base.ied'],['最終傷害 %（未列於裝備）','base.finalDamage'],['武器係數（可自行調整）','base.weaponConstant'],['手動總熟練度 %（含基礎）','base.weaponMastery'],['角色／地圖／屬性其他倍率','base.levelMultiplier']];
  return `<div class="notice"><span>⚠</span><span>此頁預填的是<b>示範數值</b>，不是你的真實能力。填「不含其他表格」的數值，才不會重複計算；武器熟練度請填遊戲內顯示的總熟練度百分比。</span></div>
- <div class="panel"><div class="flex space"><div><h2>預測角色能力</h2><p class="desc">表攻與角色能力會隨裝備、傳授及 Buff 即時更新。面板無視防禦只計入角色自身的加成。</p></div><span class="pill">公式估算</span></div>
+ <div class="panel"><div class="flex space"><div><h2>預測角色能力</h2><p class="desc">最大 HP 先合計固定值，再套用加總後的 HP %。面板無視防禦只計入角色自身的加成。</p></div><span class="pill">公式估算</span></div>
  <div class="range-value"><span id="live-range">${fmt(r.normal.panelRangeMin,0)} ～ ${fmt(r.normal.panelRangeMax,0)}</span><small>常態最小表攻 ～ 最大表攻</small></div>
  <div class="two"><div class="statline"><span>預測最小表攻</span><b id="live-min">${fmt(r.normal.panelRangeMin,0)}</b></div><div class="statline"><span>預測最大表攻</span><b id="live-max">${fmt(r.normal.panelRangeMax,0)}</b></div></div>
  <div class="two"><div class="statline"><span>常態總 DEX</span><b id="live-normal-dex">${fmt(Math.trunc(r.normal.dex),0)}</b></div><div class="statline"><span>常態總 STR</span><b id="live-normal-str">${fmt(Math.trunc(r.normal.str),0)}</b></div></div>
  <div class="statline"><span>爆發 Buff 下最小～最大表攻</span><b id="live-burst-range">${fmt(r.br.panelRangeMin,0)} ～ ${fmt(r.br.panelRangeMax,0)}</b></div>
  <div class="two"><div class="statline"><span>爆發總 DEX</span><b id="live-br-dex">${fmt(Math.trunc(r.br.dex),0)}</b></div><div class="statline"><span>爆發總 STR</span><b id="live-br-str">${fmt(Math.trunc(r.br.str),0)}</b></div></div>
- <h3>面板百分比</h3><div class="tablewrap"><table><thead><tr><th scope="col">能力</th><th scope="col">常態</th><th scope="col">爆發</th></tr></thead><tbody>
+ <h3>面板數值</h3><div class="tablewrap"><table><thead><tr><th scope="col">能力</th><th scope="col">常態</th><th scope="col">爆發</th></tr></thead><tbody>
  ${PANEL_STATS.map(([key,label])=>`<tr><td>${label}</td><td id="live-normal-${key}">${formatPanelStat(key,r.normal[key])}</td><td id="live-br-${key}">${formatPanelStat(key,r.br[key])}</td></tr>`).join('')}
  </tbody></table></div></div>
- <div class="panel"><h2>角色基礎能力</h2><p class="desc">自動熟練度採推定基礎 15% 加上專家或精通的技能熟練度。精通等級效果待確認時，沿用手動總熟練度。</p><div class="fields">${select('熟練度來源','base.masteryMode',state.base.masteryMode??'auto',[['auto','依技能自動計算'],['manual','使用手動總熟練度']])}${parts.map(([name,path])=>input(name,path,getPath(path))).join('')}</div><div class="sep"></div><button class="btn" data-action="resetBase">改成空白基礎值</button></div>
+ ${potentialSummary()}
+ <div class="panel"><h2>角色基礎能力</h2><p class="desc">自動熟練度採推定基礎 15% 加上專家或精通的技能熟練度。精通等級效果待確認時，沿用手動總熟練度。</p><div class="fields">${select('熟練度來源','base.masteryMode',state.base.masteryMode??'auto',[['auto','依技能自動計算'],['manual','使用手動總熟練度']])}${input('基礎最大 HP','base.hp',b.hp??'','填入未計入裝備、技能與 Buff 的最大 HP','1')}${input('額外最大 HP %','base.hpPct',b.hpPct??0,'僅填未列在其他欄位的加成')}${parts.map(([name,path])=>input(name,path,getPath(path))).join('')}</div><div class="sep"></div><button class="btn" data-action="resetBase">改成空白基礎值</button></div>
  ${rangeComparison()}
  <div class="panel"><h2>面板數值填寫原則</h2><p class="desc">將固定能力、裝備、傳授與常駐 Buff 分開輸入，頁面會即時顯示預測範圍。若與遊戲面板不一致，請自行調整武器係數、熟練度，並檢查是否漏填或重複加算。此工具不會自動拿實際表攻進行校正。</p></div>`;
 }
 
-const GEAR_STATS=['str','dex','attack','atkPct','allStatPct','boss','ied','finalDamage'];
-function gearStatFields(path,part,keys=GEAR_STATS){
- return keys.map(k=>input(k==='allStatPct'?'全屬性 %':STAT_LABEL[k],path+'.'+k,num(part[k]))).join('');
+const GEAR_FLAT_STATS=['str','dex','attack','hp'];
+const GEAR_STATS=[...GEAR_FLAT_STATS,'strPct','dexPct','atkPct','hpPct','allStatPct','damage','boss','ied','finalDamage','critRate','critDamage','critMax'];
+function gearStatFields(path,part){
+ return GEAR_STATS.map(key=>input(STAT_LABEL[key],path+'.'+key,num(part?.[key]))).join('');
+}
+function gearTotals(parts){
+ const active=parts.filter(part=>part&&part.enabled!==false);
+ const {total,ies,finals}=sumEffects(active);
+ return {...total,allStatPct:active.reduce((sum,part)=>sum+num(part.allStatPct),0),
+  ied:(1-ies.reduce((factor,value)=>factor*(1-value),1))*100,
+  finalDamage:(finals.reduce((factor,value)=>factor*(1+value),1)-1)*100
+ };
 }
 function gearText(label,path,value){return '<label class="field"><span>'+label+'</span><input data-kind="text" data-path="'+path+'" value="'+esc(value)+'"></label>'}
 
@@ -696,16 +721,18 @@ function gearEditor(){
  if(gearEditIndex===null)return '';
  const i=gearEditIndex,item=state.equipment[i],path='equipment.'+i;
  if(!item)return '';
- return '<dialog id="gearEditor" class="gear-dialog"><div class="flex space"><h2>'+gearLabel(item.slot)+'</h2><button class="btn" data-action="closeGear">完成</button></div><div class="fields">'+
-
- (item.slot==='body'?select('衣服類型',path+'.bodyKind',item.bodyKind||'top',[['top','上衣＋褲裙'],['overall','套服（停用褲裙能力）']]):'')+
- '</div><p class="small muted">填入此部位的能力合計。套裝加成統一填入「套裝 set」。</p><div class="gear-stat-grid">'+
- gearStatFields(path,item,[...GEAR_STATS,'dexPct','strPct','damage','critRate','critDamage','critMax'])+'</div></dialog>';
+ return `<dialog id="gearEditor" class="gear-dialog">
+ <div class="flex space"><h2>${gearLabel(item.slot)}</h2><button class="btn" data-action="closeGear">完成</button></div>
+ ${item.slot==='body'?`<div class="fields">${select('衣服類型',path+'.bodyKind',item.bodyKind||'top',[['top','上衣＋褲裙'],['overall','套服（停用褲裙能力）']])}</div>`:''}
+ <h3>裝備基礎數值</h3><div class="gear-stat-grid">${gearStatFields(path,item)}</div>
+ ${[['potential','潛能'],['additional','附加潛能']].map(([section,label])=>`<details style="margin-top:12px"><summary>${label}</summary><div class="gear-stat-grid" style="margin-top:8px">${gearStatFields(path+'.'+section,item[section])}</div></details>`).join('')}
+ </dialog>`;
 }
 function gearRows(){
  return GEAR_SLOTS.map(([id])=>state.equipment.findIndex(x=>x.slot===id)).map(i=>{
  const item=state.equipment[i],inactive=item.slot==='pants'&&suitEquipped();
- const details=[...GEAR_STATS,'dexPct','strPct','damage','critRate','critDamage','critMax'].filter(k=>num(item[k])).map(k=>(k==='allStatPct'?'全屬性 %':STAT_LABEL[k])+' '+fmt(num(item[k]),2)).join(' · ');
+ const total=gearTotals([{...item,enabled:true},item.potential,item.additional]);
+ const details=GEAR_STATS.filter(key=>Math.abs(total[key])>=1e-9).map(key=>STAT_LABEL[key]+' '+fmt(total[key],2)).join(' · ');
 
  return '<tr><td><button class="gear-name" data-action="editGear" data-index="'+i+'">'+gearLabel(item.slot)+'</button></td><td>'+checkbox('', 'equipment.'+i+'.enabled',item.enabled!==false)+'</td><td class="gear-summary">'+esc(details||'尚未填寫')+(inactive?'<small>套服已啟用，褲裙暫停計算</small>':'')+'</td><td><button class="btn sm" data-action="editGear" data-index="'+i+'">編輯</button></td></tr>';
 
@@ -713,7 +740,7 @@ function gearRows(){
 }
 
 function equipment(){
- return '<div class="panel"><h2>裝備配裝</h2><p class="desc">點選部位或編輯，填入能力合計。全部套裝加成填在「套裝 set」。</p><table class="gear-table"><thead><tr><th>部位</th><th>啟用</th><th>能力合計</th><th></th></tr></thead><tbody>'+gearRows()+'</tbody></table></div>'+gearEditor();
+ return '<div class="panel"><h2>裝備配裝</h2><p class="desc">點選部位編輯裝備基礎數值、潛能與附加潛能。套裝加成填在「套裝 set」。</p><table class="gear-table"><thead><tr><th>部位</th><th>啟用</th><th>能力合計</th><th></th></tr></thead><tbody>'+gearRows()+'</tbody></table></div>'+gearEditor();
 }
 function linkPage(){let sel=state.links.filter(x=>x.id!=='none');let keys=Object.keys(LINK);return `<div class="notice info">楓星傳授資料採社群整理的 Lv.1～5 數值，可編輯傳授種類與等級；若遊戲顯示與此不同，請以遊戲為準。<b>最多裝備三個傳授</b>。</div><div class="panel"><h2>傳授技能插槽</h2><div class="linkcards">${state.links.map((ln,i)=>{let eff=LINK[ln.id]?.effects[(ln.level||1)-1]||{};return `<div class="linkcard"><div class="kicker">傳授插槽 ${i+1}</div><label class="field" style="margin-top:9px"><span>效果</span><select data-path="links.${i}.id">${keys.map(k=>`<option value="${k}" ${ln.id===k?'selected':''}>${esc(LINK[k].name)}</option>`).join('')}</select></label><label class="field" style="margin-top:9px"><span>傳授等級</span><select data-path="links.${i}.level">${[1,2,3,4,5].map(k=>`<option value="${k}" ${Number(ln.level)===k?'selected':''}>Lv.${k}</option>`).join('')}</select></label><div class="small muted" style="margin-top:8px">${Object.keys(eff).map(k=>`${STAT_LABEL[k]||k} +${eff[k]}%`).join(' / ')||'未裝備'}</div></div>`}).join('')}</div></div><div class="panel"><h2>數值來源與注意</h2><p class="desc">槍神、機甲、黑騎等的「物攻」暫視為攻擊力百分比；「最大暴擊傷害」只以一半折算為平均暴傷近似，並非官方公式。傳授加成僅做方向性比較，不應取代遊戲實測。</p></div>`}
 function effectTable(kind){const columns=STATS;return ` <div class="tablewrap"><table><thead><tr><th>排序</th><th>啟用</th><th>來源</th><th>生效時段</th>${columns.map(k=>`<th>${STAT_LABEL[k]}</th>`).join('')}<th>移除</th></tr></thead><tbody>${state[kind].map((x,i)=>`<tr data-sort-kind="${kind}" data-sort-index="${i}"><td class="order-cell"><button class="handle" draggable="true" data-drag-kind="${kind}" data-drag-index="${i}" title="拖曳排序">⠿</button><button class="order-btn" data-action="moveItem" data-kind="${kind}" data-index="${i}" data-dir="-1" ${i===0?'disabled':''} title="上移">↑</button><button class="order-btn" data-action="moveItem" data-kind="${kind}" data-index="${i}" data-dir="1" ${i===state[kind].length-1?'disabled':''} title="下移">↓</button></td><td><input class="rowcheck" type="checkbox" data-path="${kind}.${i}.enabled" ${x.enabled?'checked':''}></td><td><input class="tdinput name" type="text" data-kind="text" data-path="${kind}.${i}.name" value="${esc(x.name)}"></td><td><select class="mini-select" data-path="${kind}.${i}.phase"><option value="always" ${x.phase==='always'?'selected':''}>常駐</option><option value="burst" ${x.phase==='burst'?'selected':''}>僅爆發</option></select></td>${columns.map(k=>`<td><input class="tdinput" type="number" data-path="${kind}.${i}.${k}" value="${num(x[k])}"></td>`).join('')}<td><button class="btn sm danger" data-action="removeBuff" data-kind="${kind}" data-index="${i}">刪除</button></td></tr>`).join('')}</tbody></table></div>`}
