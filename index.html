@@ -46,7 +46,7 @@ const INITIAL={
  buffs:[{name:'花力全開能力增益（請自行填）',phase:'burst',enabled:false,attack:0,atkPct:0,dex:0,str:0,damage:0,boss:0,critRate:0,critDamage:0,ied:0,finalDamage:0}],
  boss:{pdr:100,taken:0,partyIed:0},
  skill:{aStages:[250,260,280,760],aCharge:[70,70,70,100],bComboBonus:45,bCharge:50,bComboCharge:100,aTime:1.392,bTime:0.640,abTime:1.953,chargeFactor:1.5,chargeMax:12000,mark:30,markMode:'off'},
- calc:{finish:'full',calibScale:1,panelMax:0,panelMin:0,calibMethod:'none',measuredDamage:0,measuredSkillPct:195,measuredCrit:'normal',calibSet:false},baseline:null,gearNote:'示範基礎數值，非本人實際裝備'};
+ calc:{finish:'full',luckyDice:false,calibScale:1,panelMax:0,panelMin:0,calibMethod:'none',measuredDamage:0,measuredSkillPct:195,measuredCrit:'normal',calibSet:false},baseline:null,gearNote:'示範基礎數值，非本人實際裝備'};
 
 const GEAR_SLOTS=[['badge','徽章'],['medal','勳章'],['pocket','口袋道具'],['cape','披風'],['gloves','手套'],['hat','帽子'],['face','臉飾'],['eye','眼飾'],['body','上衣／套服'],['pants','褲裙'],['necklace','項鍊'],['belt','腰帶'],['shoes','鞋子'],['heart','機器人心臟'],['ring1','戒指 1'],['ring2','戒指 2'],['ring3','戒指 3'],['ring4','戒指 4'],['earring','耳環'],['shoulder','肩膀'],['weapon','主武器'],['secondary','副武器'],['totem','圖騰'],['pet1','寵物裝備 1'],['pet2','寵物裝備 2'],['pet3','寵物裝備 3'],['set','套裝 set']];
 function normalizeEquipment(s){
@@ -131,7 +131,8 @@ const JOB_SKILL_DATA={
  '花力開放':{max:20,burstAt:level=>({critRate:100,ied:30+level}),
   summary:level=>`${flowerOpeningDuration(level)} 秒內爆擊率 +100 個百分點、無視防禦 +${30+level}%，冷卻 180 秒。`,
   description:'每輪爆發仍打 20 秒。爆擊率與無視防禦增益只在技能冷卻轉好時套用。'},
- '雙倍幸運骰子':{max:5,summary:level=>`${10*level}% 機率擲出兩顆骰子，增益持續 ${180+4*level} 秒。`},
+ '雙倍幸運骰子':{max:5,summary:level=>`${10*level}% 機率擲出兩顆骰子，增益持續 ${180+4*level} 秒。`,
+  description:'單 4／雙 4 增加 20／30 個百分點爆擊率，單 5／雙 5 增加 20／30 個百分點傷害，與 Boss 傷害相加。可在打王比較勾選套用骰子期望值。'},
  '黎明勇士':{max:30,toggle:'套用黎明勇士',
   summary:level=>`純配點 STR、DEX +${warriorPercent(level)}%${level===30?'，持續 900 秒':''}。`,
   description:'先按純配點算出增加的 STR、DEX，再和其他固定屬性一起套用裝備百分比。勾選後以增益有效的狀態試算。'},
@@ -352,11 +353,37 @@ function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillL
  const panelRangeMax=rawRange*panelFactor;
  const panelRangeMin=Math.round(panelRangeMax)*weaponMastery/100;
  const panelAverageFactor=panelRangeMax>0?(panelRangeMax+panelRangeMin)/(2*panelRangeMax):0;
- const multi=Math.max(0,1+(damage+boss)/100)*finalFactor*critFactor*defense*(1+num(state.boss.taken)/100)*num(b.levelMultiplier);
  const averageRaw=(rawRange+rawMin)/2;
+ const damageScale=averageRaw*finalFactor*defense*(1+num(state.boss.taken)/100)*num(b.levelMultiplier);
  return {dex,str,attack,hp,damage,boss,ied,panelIed,defense,finalFactor,critRate,minCrit,maxCrit,critBonus,critFactor,rawRange,rawMin,
   predictedPanel:panelRangeMax,predictedMin:panelRangeMin,panelRangeMax,panelRangeMin,panelAverageFactor,
-  weaponConstant,weaponMastery,multi,per100:Math.max(0,averageRaw*multi),iedRemain};
+  weaponConstant,weaponMastery,damageScale,per100:Math.max(0,damageScale*Math.max(0,1+(damage+boss)/100)*critFactor),iedRemain};
+}
+const LUCKY_DICE_COOLDOWN=200;
+const NO_DICE=[{crit:0,damage:0,probability:1}];
+function luckyDiceModel(levelFor){
+ if(!state.calc.luckyDice||!levelFor('幸運骰子'))return {duration:0,outcomes:NO_DICE};
+ const level=levelFor('雙倍幸運骰子'), doubleChance=level/10;
+ // 兩顆公平骰獨立，雙骰的 4＋5 會同時生效。骰面 1、2、3、6 在此沒有傷害增益。
+ const outcomes=[
+  [0,0,4,16],[20,0,1,8],[30,0,0,1],[0,20,1,8],[0,30,0,1],[20,20,0,2]
+ ].map(([crit,damage,singleCount,doubleCount])=>({
+  crit,damage,probability:(1-doubleChance)*singleCount/6+doubleChance*doubleCount/36
+ }));
+ return {duration:180+4*level,outcomes};
+}
+function fightDamageRates(context,outcomes){
+ const rates={average:0,critical:0,additiveMark:0};
+ const markBonus=num(state.skill.mark)/100;
+ for(const {crit,damage,probability} of outcomes){
+  const bossFactor=1+(context.damage+context.boss+damage)/100;
+  const baseRate=context.damageScale*Math.max(0,bossFactor);
+  const average=Math.max(0,baseRate*(1+Math.min(100,context.critRate+crit)/100*context.critBonus));
+  rates.average+=probability*average;
+  rates.critical+=probability*Math.max(0,baseRate*(1+context.critBonus));
+  rates.additiveMark+=probability*average*Math.max(0,bossFactor+markBonus)/Math.max(.001,bossFactor);
+ }
+ return rates;
 }
 const BURST_SECONDS=20, ULT_SHOTS=80, FLOWER_SHOTS=12, SNIPE_COOLDOWN=30, FIGHT_SECONDS=180;
 const FLOWER_OPENING_COOLDOWN=180;
@@ -400,7 +427,7 @@ function burstDetails(s,levelFor){
   shot:levelFor('狙擊')===20?(1695+secretSnipeBonus(levelFor('火繩槍劍秘傳')))*4:0
  };
 }
-function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,burstLimit=0,burstWithoutOpening}){
+function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,burstLimit=0,burstWithoutOpening,dice}){
  if(!c.available)return null;
  const openingLevel=levelFor('花力開放');
  const canBurst=openingLevel>0;
@@ -497,6 +524,11 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  const unlocks=[];
  let ready=1, unlockIndex=0, procs=0, markUntil=0, markMode='off';
  const totals={};
+ const damageRates=new Map([normal,burst,burstWithoutOpening].map(context=>{
+  const inactive=fightDamageRates(context,NO_DICE);
+  return [context,{inactive,active:dice.duration?fightDamageRates(context,dice.outcomes):inactive}];
+ }));
+ const multiplicativeMark=1+num(state.skill.mark)/100;
  for(const source of ['charge','ult','normalFlower','flower','dot','snipe','proc'])totals[source]={count:0,multiplier:0,damage:0,primaryDamage:0};
  const record=(source,multiplier,primaryDamage,otherDamage=0,count=1)=>{
   const row=totals[source];
@@ -505,18 +537,18 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  for(const event of events){
   const openingEnd=event.phase?activeBurst(event.time)?.openingEnd:undefined;
   const context=!event.phase?normal:event.time<(openingEnd??0)?burst:burstWithoutOpening;
-  const critical=event.source==='snipe'?(1+context.critBonus)/context.critFactor:1;
-  const marked=event.time<markUntil&&event.source!=='snipe';
-  let mark=1;
-  if(marked&&markMode==='multiplicative')mark=1+num(state.skill.mark)/100;
-  if(marked&&markMode==='additive'){
-   const factor=1+(context.damage+context.boss)/100;
-   mark=Math.max(0,factor+num(state.skill.mark)/100)/Math.max(.001,factor);
+  const phaseRates=damageRates.get(context);
+  const rates=event.time%LUCKY_DICE_COOLDOWN<dice.duration?phaseRates.active:phaseRates.inactive;
+  const isSnipe=event.source==='snipe';
+  let primaryRate=isSnipe?rates.critical:rates.average;
+  let procRate=rates.average;
+  if(event.time<markUntil&&!isSnipe){
+   if(markMode==='multiplicative')procRate*=multiplicativeMark;
+   if(markMode==='additive')procRate=rates.additiveMark;
+   primaryRate=procRate;
   }
-  const per100=context.per100/100;
-  const perTargetDamage=event.multiplier*per100*critical;
-  record(event.source,event.multiplier*event.targets,perTargetDamage*mark,perTargetDamage*(event.targets-1));
-  if(event.source==='snipe'&&event.markEnd){
+  record(event.source,event.multiplier*event.targets,event.multiplier*primaryRate/100,event.multiplier*rates.average/100*(event.targets-1));
+  if(isSnipe&&event.markEnd){
    markUntil=event.markEnd;
    markMode=event.openingSnipe&&state.skill.markMode==='off'?'multiplicative':state.skill.markMode;
   }
@@ -528,7 +560,7 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
   const chance=clamp(ready,0,1)*procChance;
   ready-=chance;procs+=chance;
   if(chance>0)unlocks.push({time:event.time+cooldown,chance});
-  record('proc',procMultiplier*chance,procMultiplier*chance*per100*mark,0,chance);
+  record('proc',procMultiplier*chance,procMultiplier*chance*procRate/100,0,chance);
  }
  const dealt=Object.values(totals).reduce((sum,row)=>sum+row.damage,0);
  const primaryDamage=Object.values(totals).reduce((sum,row)=>sum+row.primaryDamage,0);
@@ -538,16 +570,17 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
 function compute(levels=state.jobSkillLevels,opener=state.calc.opener==='burst'?'burst':'charge'){
  const targets=Math.max(1,Math.trunc(num(state.calc.targetCount)));
  const levelFor=name=>jobSkillLevel(name,levels);
+ const dice=luckyDiceModel(levelFor);
  const normal=buildContext(false,'avg',state.base,levelFor);
  const br=buildContext(true,'avg',state.base,levelFor);
  const burstWithoutOpening=buildContext(true,'avg',state.base,levelFor,false);
  const settings=rotationSkillSettings(levelFor), skills=burstDetails(settings,levelFor);
  const cycles=combos(settings,levelFor).map(combo=>{
   const plan=chargePlan(combo,settings);
-  return {...plan,run:simulateFight(plan,FIGHT_SECONDS,normal,br,skills,levelFor,{opener,targets,burstWithoutOpening})};
+  return {...plan,run:simulateFight(plan,FIGHT_SECONDS,normal,br,skills,levelFor,{opener,targets,burstWithoutOpening,dice})};
  });
  const win=cycles.filter(c=>c.run).sort((a,b)=>b.run.dps-a.run.dps)[0];
- return {normal,br,burstWithoutOpening,skills,cycles,win,opener,targets,seconds:FIGHT_SECONDS};
+ return {normal,br,burstWithoutOpening,skills,cycles,win,opener,targets,dice,seconds:FIGHT_SECONDS};
 }
 function completeBurstComparison(fromZero,fromFull){
  const choices=[3,5,10,20];
@@ -555,7 +588,7 @@ function completeBurstComparison(fromZero,fromFull){
  const count=choices.includes(savedCount)?savedCount:10;
  const compare=result=>result.cycles.map(plan=>simulateFight(
   plan,3600,result.normal,result.br,result.skills,jobSkillLevel,
-  {opener:result.opener,targets:result.targets,burstLimit:count,burstWithoutOpening:result.burstWithoutOpening}
+  {opener:result.opener,targets:result.targets,burstLimit:count,burstWithoutOpening:result.burstWithoutOpening,dice:result.dice}
  ));
  const zero=compare(fromZero), full=compare(fromFull);
  const cell=run=>run?`<b>${fmt(run.dps,0)} DPS</b><br>${fmt(run.duration,2)} 秒`:'—';
@@ -570,7 +603,7 @@ function completeBurstComparison(fromZero,fromFull){
 }
 const RECOMMENDABLE_SKILLS=[
  '花力強化(青)','花尖','點花','奧義．爆',
- '火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳','花力開放','黎明勇士'
+ '火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳','花力開放','黎明勇士','雙倍幸運骰子'
 ];
 function recommendSkillPoints(result,rotation){
  const pick=trial=>rotation==='best'?trial.win:trial.cycles.find(c=>c.id===rotation&&c.run);
@@ -578,6 +611,7 @@ function recommendSkillPoints(result,rotation){
  if(!baseline)return [];
  return RECOMMENDABLE_SKILLS.flatMap(name=>{
   if(name==='黎明勇士'&&!jobSkillToggle(name))return [];
+  if(name==='雙倍幸運骰子'&&!result.dice.duration)return [];
   const level=jobSkillLevel(name);
   if(level>=JOB_SKILL_DATA[name].max)return [];
   const trial=pick(compute({...state.jobSkillLevels,[name]:level+1},result.opener));
@@ -591,7 +625,7 @@ function recommendationPanel(result){
  const selected=options.some(([key])=>key===rotation)?rotation:'best';
  const rows=recommendSkillPoints(result,selected);
  return `<div class="panel" id="skill-recommendations"><h2>推薦技能點</h2>
- <p class="desc">各技能分別試加 1 點，比較同一配裝與 Boss 設定下的 180 秒總傷害。黎明勇士須勾選套用才會列入，雙倍幸運骰子的效果資料待確認。</p>
+ <p class="desc">各技能分別試加 1 點，比較同一配裝與 Boss 設定下的 180 秒總傷害。黎明勇士和雙倍幸運骰子在各自勾選套用後才會列入。</p>
  ${select('比較打法','calc.recommendRotation',selected,options)}
  ${rows.length?`<div class="tablewrap"><table><thead><tr><th>技能</th><th>等級</th><th>試算打法</th><th>總傷害差</th><th>DPS 差</th><th>提升率</th></tr></thead><tbody>
  ${rows.map(({name,level,trial,baseline,gain},i)=>{
@@ -604,7 +638,7 @@ function recommendationPanel(result){
 function metric(k,v,sub){return `<div class="metric"><label>${k}</label><strong>${v}</strong><em>${sub}</em></div>`}
 function barRows(data,key,suffix='',decimal=1){let max=Math.max(0,...data.map(x=>x[key]));return data.map(x=>`<div class="chartrow"><div>${x.name}</div><div class="track"><div class="bar ${x.id}" style="width:${max?Math.max(0,x[key])/max*100:0}%"></div></div><div class="right"><b>${fmt(x[key],decimal)}</b>${suffix}</div></div>`).join('')}
 function dashboard(){
- const result=compute(),{normal,cycles,win,seconds,skills,opener,targets}=result;
+ const result=compute(),{normal,cycles,win,seconds,skills,opener,targets,dice}=result;
  const other=compute(state.jobSkillLevels,opener==='burst'?'charge':'burst');
  const [fromZero,fromFull]=opener==='charge'?[result,other]:[other,result];
  const played=cycles.filter(c=>c.run);
@@ -617,11 +651,13 @@ function dashboard(){
  }).join(''):'';
  return `<div class="grid">${metric('預測常態最小表攻',fmt(normal.panelRangeMin,0),'熟練度 '+fmt(normal.weaponMastery,0)+'%')}
  ${metric('預測常態最大表攻',fmt(normal.panelRangeMax,0),'武器係數 '+fmt(normal.weaponConstant,3))}
- ${metric('常態每 100% 平均傷害',fmt(normal.per100,0),'含爆擊期望與 Boss 防禦')}
+ ${metric('常態每 100% 平均傷害',fmt(dice.duration?fightDamageRates(normal,dice.outcomes).average:normal.per100,0),dice.duration?'骰子生效時，含爆擊期望與 Boss 防禦':'含爆擊期望與 Boss 防禦')}
  ${metric('180 秒最高 DPS',fmt(win?.run.dps,0),win?.name??'請確認職業技能等級')}</div>
  <div class="panel"><div class="flex space"><div><h2>180 秒打王傷害模擬</h2><p class="desc">花力充滿後先打 10 秒奧義（80 發），再打 10 秒點花（12 發）。狙擊開場使用，之後每 30 秒使用一次。</p></div>
  <div class="fields">${input('怪物數量','calc.targetCount',targets,'兩種開場共用，假設怪物全程在攻擊範圍內且防禦相同','1')}
  ${input('Boss 物理防禦率 %','boss.pdr',state.boss.pdr)}</div></div>
+ ${checkbox('計入幸運骰子期望傷害','calc.luckyDice',state.calc.luckyDice)}
+ ${state.calc.luckyDice?`<p class="desc">${dice.duration?`開場擲骰，每 200 秒重擲，增益持續 ${dice.duration} 秒。雙骰機率 ${jobSkillLevel('雙倍幸運骰子')*10}%。`:'幸運骰子尚未習得。'}</p>`:''}
  <div class="tablewrap"><table><thead><tr><th>180 秒比較</th><th>從零集花力</th><th>滿花力開場</th><th>開場爆發差異</th></tr></thead><tbody>
  ${fromZero.cycles.map((combo,i)=>{
   const zero=combo.run, full=fromFull.cycles[i].run;
