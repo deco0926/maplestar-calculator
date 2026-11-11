@@ -598,9 +598,9 @@ const BOSS_KILL_TARGETS=[
  {name:'杜那斯',hp:700_000_000}
 ];
 const BOSS_KILL_PDR=50, BOSS_KILL_LIMIT=3600;
-function bossKillTime(plan,fight,hp){
+function bossKillTime(plan,fight,hp,opener){
  const {normal,br,burstWithoutOpening,skills,dice}=fight;
- const options={opener:'charge',targets:1,burstWithoutOpening,dice,bossHp:hp};
+ const options={opener,targets:1,burstWithoutOpening,dice,bossHp:hp};
  for(let seconds=FIGHT_SECONDS;;seconds=Math.min(seconds*2,BOSS_KILL_LIMIT)){
   const run=simulateFight(plan,seconds,normal,br,skills,jobSkillLevel,options);
   if(run.defeatTime!==null||seconds===BOSS_KILL_LIMIT)return run.defeatTime;
@@ -608,22 +608,28 @@ function bossKillTime(plan,fight,hp){
 }
 function bossKillPage(){
  const fight=prepareFight(jobSkillLevel,BOSS_KILL_PDR);
- const rows=BOSS_KILL_TARGETS.map(({name,hp})=>{
-  const times=fight.plans.map(plan=>plan.available?bossKillTime(plan,fight,hp):null);
-  const fastest=Math.min(...times.filter(time=>time!==null));
-  const cells=times.map((time,index)=>{
-   if(!fight.plans[index].available)return '<td>打法未解鎖</td>';
-   if(time===null)return '<td>60 分內未擊殺</td>';
-   const seconds=Math.ceil(time);
-   return `<td><b class="${time===fastest?'good':''}">${Math.floor(seconds/60)} 分 ${seconds%60} 秒</b></td>`;
+ const canBurst=jobSkillLevel('花力開放')>0;
+ return `<p class="desc">單人模擬，沿用目前的裝備、技能、Buff 和骰子設定，假設 Boss 全程可攻擊。</p>
+ ${canBurst?'':'<p class="small muted">花力開放尚未習得，兩種開場都會持續集花力。</p>'}
+ ${BOSS_KILL_TARGETS.map(({name,hp})=>{
+  const columns=OPENERS.map(([opener,label])=>{
+   const times=fight.plans.map(plan=>plan.available?bossKillTime(plan,fight,hp,opener):null);
+   return {label,times,fastest:Math.min(...times.filter(time=>time!==null))};
   });
-  return `<tr><th scope="row">${name}</th><td>${fmt(hp,0)}</td><td>${pct(BOSS_KILL_PDR,0)}</td>${cells.join('')}</tr>`;
- });
- return `<div class="panel"><h2>預估擊殺時間</h2>
- <p class="desc">單人從零集花力，充滿後爆發，再重新集花力。沿用目前的裝備、技能、Buff 和骰子設定，假設 Boss 全程可攻擊。</p>
- <div class="tablewrap"><table><thead><tr><th scope="col">Boss</th><th scope="col">預估 HP</th><th scope="col">防禦率</th>${fight.plans.map(plan=>`<th scope="col">${plan.name}</th>`).join('')}</tr></thead><tbody>
- ${rows.join('')}
- </tbody></table></div></div>`;
+  const rows=fight.plans.map((plan,index)=>{
+   const cells=columns.map(({times,fastest})=>{
+    if(!plan.available)return '<td>打法未解鎖</td>';
+    const time=times[index];
+    if(time===null)return '<td>60 分內未擊殺</td>';
+    const seconds=Math.ceil(time);
+    return `<td><b class="${time===fastest?'good':''}">${Math.floor(seconds/60)} 分 ${seconds%60} 秒</b></td>`;
+   });
+   return `<tr><th scope="row">${plan.name}</th>${cells.join('')}</tr>`;
+  });
+  return `<div class="panel"><h2>${name}</h2><p class="desc">預估 HP ${fmt(hp,0)} · 防禦率 ${pct(BOSS_KILL_PDR,0)}</p>
+  <div class="tablewrap"><table><thead><tr><th scope="col">打法</th>${columns.map(({label})=>`<th scope="col">${label}</th>`).join('')}</tr></thead>
+  <tbody>${rows.join('')}</tbody></table></div></div>`;
+ }).join('')}`;
 }
 function completeBurstComparison(fromZero,fromFull){
  const choices=[3,5,10,20];
