@@ -362,10 +362,11 @@ function burstDetails(s,levelFor){
   shot:levelFor('狙擊')===20?(1695+secretSnipeBonus(levelFor('火繩槍劍秘傳')))*4:0
  };
 }
-function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets}){
+function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,burstLimit=0}){
  if(!c.available)return null;
  const openingLevel=levelFor('花力開放');
  const canBurst=openingLevel>0;
+ if(burstLimit&&(!canBurst||!Number.isFinite(c.count)))return null;
  const buffSeconds=Math.min(BURST_SECONDS,9+openingLevel);
  const events=[];
  const flowerTimes=[];
@@ -385,7 +386,7 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets}){
   nextNormalFlower=time+NORMAL_FLOWER_COOLDOWN;
  };
  const openWithBurst=opener==='burst'&&canBurst;
- let charges=0,bursts=0,firstCharge=openWithBurst?0:null,firstBurst=null;
+ let charges=0,bursts=0,firstCharge=openWithBurst?0:null,firstBurst=null,finishTime=null;
  const count=canBurst?c.count:Infinity;
  while(time<seconds){
   if(!openWithBurst||firstBurst!==null){
@@ -416,7 +417,12 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets}){
   // 爆發開啟時重置常態冷卻，爆發射擊另計，結束後可立即蓄能。
   nextNormalFlower=burstEnd;
   time=burstEnd;
+  if(burstLimit&&bursts===burstLimit){
+   finishTime=burstEnd;
+   break;
+  }
  }
+ if(burstLimit&&finishTime===null)return null;
  const activeBurst=time=>burstWindows.find(window=>time>=window.start&&time<window.buffEnd);
  // 每發刷新同一個 DoT，沿用每秒一跳的節拍。
  let expiry=-Infinity, tick=Infinity;
@@ -425,8 +431,16 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets}){
   if(time>expiry)tick=time+1;
   expiry=time+skills.dotDuration;
  }
- for(;tick<=expiry&&tick<seconds;tick++)add(tick,'dot',skills.dotPerTick,!!activeBurst(tick));
- for(let time=0;skills.shot&&time<seconds;time+=SNIPE_COOLDOWN){
+ if(finishTime!==null&&Number.isFinite(expiry))seconds=Math.max(seconds,expiry+1);
+ let lastDotTick=0;
+ for(;tick<=expiry&&tick<seconds;tick++){
+  add(tick,'dot',skills.dotPerTick,!!activeBurst(tick));
+  lastDotTick=tick;
+ }
+ const attackEnd=finishTime??seconds;
+ // 完整輪次停止出招後，等最後一次點花的持續傷害跳完。
+ const duration=finishTime===null?seconds:Math.max(finishTime,lastDotTick);
+ for(let time=0;skills.shot&&time<attackEnd;time+=SNIPE_COOLDOWN){
   const burstWindow=activeBurst(time);
   const openingSnipe=openWithBurst&&time===0;
   add(time,'snipe',skills.shot,!!burstWindow&&!openingSnipe,{markEnd:burstWindow?.end??0,openingSnipe});
@@ -474,7 +488,7 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets}){
  const dealt=Object.values(totals).reduce((sum,row)=>sum+row.damage,0);
  const primaryDamage=Object.values(totals).reduce((sum,row)=>sum+row.primaryDamage,0);
  const multiplier=Object.values(totals).reduce((sum,row)=>sum+row.multiplier,0);
- return {totals,dealt,primaryDamage,multiplier,charges,bursts,procs,firstCharge,firstBurst,dps:dealt/seconds};
+ return {totals,dealt,primaryDamage,multiplier,charges,bursts,procs,firstCharge,firstBurst,duration,dps:dealt/duration};
 }
 function compute(levels=state.jobSkillLevels,opener=state.calc.opener==='burst'?'burst':'charge'){
  const targets=Math.max(1,Math.trunc(num(state.calc.targetCount)));
@@ -488,6 +502,25 @@ function compute(levels=state.jobSkillLevels,opener=state.calc.opener==='burst'?
  });
  const win=cycles.filter(c=>c.run).sort((a,b)=>b.run.dps-a.run.dps)[0];
  return {normal,br,skills,cycles,win,opener,targets,seconds:FIGHT_SECONDS};
+}
+function completeBurstComparison(fromZero,fromFull){
+ const choices=[3,5,10,20];
+ const savedCount=num(state.calc.completeBursts??10);
+ const count=choices.includes(savedCount)?savedCount:10;
+ const compare=result=>result.cycles.map(plan=>simulateFight(
+  plan,3600,result.normal,result.br,result.skills,jobSkillLevel,
+  {opener:result.opener,targets:result.targets,burstLimit:count}
+ ));
+ const zero=compare(fromZero), full=compare(fromFull);
+ const cell=run=>run?`<b>${fmt(run.dps,0)} DPS</b><br>${fmt(run.duration,2)} 秒`:'—';
+ return `<div class="panel"><h2>完整爆發輪次比較</h2>
+ <p class="desc">每套打法打完相同次數的爆發，用總傷害除以實際耗時。最後一輪會等點花持續傷害跳完。</p>
+ ${select('完成爆發次數','calc.completeBursts',count,choices.map(n=>[n,n+' 次']))}
+ <div class="tablewrap"><table><thead><tr><th>打法</th><th>從零集花力</th><th>滿花力開場</th></tr></thead><tbody>
+ ${fromZero.cycles.map((combo,i)=>`<tr><td>${combo.name}</td><td>${cell(zero[i])}</td><td>${cell(full[i])}</td></tr>`).join('')}
+ </tbody></table></div>
+ ${[...zero,...full].some(run=>!run)?'<p class="small muted">— 表示打法不可用，或 3,600 秒內未能完成指定爆發次數。</p>':''}
+ </div>`;
 }
 const RECOMMENDABLE_SKILLS=[
  '精靈的祝福','女皇的祝福','花力強化(青)','花尖','點花','奧義．爆',
@@ -570,6 +603,7 @@ function dashboard(){
  ${jobSkillLevel('花力開放')===0?'<p class="small muted">花力開放尚未習得，戰鬥中會持續使用集花力打法。</p>':''}
  ${jobSkillLevel('狙擊')>0&&!skills.shot?'<p class="small muted">狙擊低等級倍率待確認，本次試算略過狙擊。</p>':''}
  ${barRows(played.map(c=>({...c,dps:c.run.dps})),'dps',' /秒',0)}</div>
+ ${completeBurstComparison(fromZero,fromFull)}
  ${recommendationPanel(result)}
  <div class="panel"><h2>180 秒傷害來源明細</h2><p class="desc">DPS% 為該技能的實際傷害占比。倍率／秒為技能總倍率除以 180，保留角色乘區套用前的數字。</p>
  <div class="tablewrap"><table><thead><tr><th>技能</th>${cycles.map(c=>`<th>${c.name}</th>`).join('')}</tr></thead><tbody>
