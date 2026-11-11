@@ -26,7 +26,7 @@
 <script>
 'use strict';
 const VERSION=5, KEY='ayame_lab_20261103_v2'; // 同一儲存鍵，保留 v3 設定
-const NAV=[['dashboard','📊','傷害總覽','傷害比較總覽','比較 A、B、A+B 的完整打王循環與傷害效率。'],['character','🎯','角色能力','角色基本能力','填入菖蒲的 DEX、STR、攻擊力、爆擊及其他常態能力。'],['equipment','🛡️','裝備配裝','裝備能力與套裝','逐件編輯裝備、潛能、卷軸及套裝加成，支援匯入參考套裝。'],['links','🔗','傳授技能','傳授技能配置','最多選擇三個傳授，依等級自動加入屬性。'],['jobSkills','📚','職業技能','菖蒲職業技能','依轉職階段查看技能。'],['buffs','🧪','藥水・Buff','增益與消耗品','加入常駐或僅爆發期間啟用的能力，並可快速切換。'],['skills','⚔️','技能與循環','技能倍率與動作時間','你錄影量測的出招速度與滿等技能倍率都可以修改。'],['boss','👑','Boss 與表攻','Boss 防禦與表攻預測','調整防禦率，核對預測最小與最大表攻，不使用校正係數。'],['method','📖','說明與驗證','使用說明與計算假設','了解公式、限制、版本差異，以及如何讓數字更準。']];
+const NAV=[['dashboard','📊','傷害總覽','傷害比較總覽','比較 A、B、A+B 的完整打王循環與傷害效率。'],['bossKill','⏱️','打王時間','Boss 擊殺時間','比較三種集花力打法的預估單人擊殺時間。'],['character','🎯','角色能力','角色基本能力','填入菖蒲的 DEX、STR、攻擊力、爆擊及其他常態能力。'],['equipment','🛡️','裝備配裝','裝備能力與套裝','逐件編輯裝備、潛能、卷軸及套裝加成，支援匯入參考套裝。'],['links','🔗','傳授技能','傳授技能配置','最多選擇三個傳授，依等級自動加入屬性。'],['jobSkills','📚','職業技能','菖蒲職業技能','依轉職階段查看技能。'],['buffs','🧪','藥水・Buff','增益與消耗品','加入常駐或僅爆發期間啟用的能力，並可快速切換。'],['skills','⚔️','技能與循環','技能倍率與動作時間','你錄影量測的出招速度與滿等技能倍率都可以修改。'],['boss','👑','Boss 與表攻','Boss 防禦與表攻預測','調整防禦率，核對預測最小與最大表攻，不使用校正係數。'],['method','📖','說明與驗證','使用說明與計算假設','了解公式、限制、版本差異，以及如何讓數字更準。']];
 const LINK={none:{name:'不裝備',effects:[]},boss:{name:'英雄／劍豪・Boss 傷害',effects:[{boss:2},{boss:4},{boss:6},{boss:8},{boss:10}]},ied:{name:'拳霸／重砲指揮官・無視防禦',effects:[{ied:3},{ied:6},{ied:9},{ied:12},{ied:15}]},atk:{name:'槍神／機甲戰神・物攻%',effects:[{atkPct:1},{atkPct:3},{atkPct:5},{atkPct:7},{atkPct:10}]},hpAtk:{name:'黑騎／狂狼勇士・物攻%',effects:[{atkPct:1},{atkPct:2},{atkPct:3},{atkPct:4},{atkPct:5}]},crit:{name:'箭神／狂豹獵人・爆率＋傷害',effects:[{critRate:1,damage:1},{critRate:2,damage:2},{critRate:4,damage:3},{critRate:6,damage:4},{critRate:8,damage:5}]},critMax:{name:'神射手／菖蒲・最大爆傷＋傷害',effects:[{critMax:1,damage:1},{critMax:3,damage:1},{critMax:5,damage:2},{critMax:7,damage:2},{critMax:6,damage:3}]}};
 const STATS=['dex','str','attack','hp','dexPct','strPct','atkPct','hpPct','damage','boss','critRate','critDamage','critMax','ied','finalDamage'];
 const STAT_LABEL={dex:'DEX',str:'STR',attack:'物攻 +',hp:'最大 HP +',dexPct:'DEX %',strPct:'STR %',atkPct:'物攻 %',hpPct:'最大 HP %',allStatPct:'全屬性 %',damage:'傷害 %',boss:'Boss %',critRate:'爆擊率 %',critDamage:'平均額外爆傷 %',critMax:'最大爆傷 %',ied:'無視防禦 %',finalDamage:'最終傷害 %'};
@@ -312,7 +312,7 @@ function totalWeaponMastery(base,levelFor){
  if(level>0&&level<20)return clamp(num(base.weaponMastery),0,100);
  return 15+(level===20?50:0);
 }
-function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillLevel,openingActive=burst){
+function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillLevel,openingActive=burst,bossPdr=state.boss.pdr){
  const isActive=effect=>effect.phase==='always'||(burst&&effect.phase==='burst');
  const jobEffects=state.jobSkillEffects.filter(isActive).flatMap(effect=>{
   const name=jobSkillName(effect.name);
@@ -336,7 +336,7 @@ function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillL
  const panelIed=(1-iedRemain)*100;
  if(num(state.boss.partyIed)>0)iedRemain*=1-clamp(num(state.boss.partyIed),0,100)/100;
  const ied=(1-iedRemain)*100;
- const pdr=clamp(num(state.boss.pdr),0,999);
+ const pdr=clamp(num(bossPdr),0,999);
  const defense=Math.max(0,1-(pdr/100)*iedRemain);
  let finalFactor=(1+num(b.finalDamage)/100);for(const p of finals)finalFactor*=1+p;
  const critRate=clamp(num(b.critRate)+t.critRate,0,100);
@@ -429,7 +429,7 @@ function burstDetails(s,levelFor){
   shot:levelFor('狙擊')===20?(1695+secretSnipeBonus(levelFor('火繩槍劍秘傳')))*4:0
  };
 }
-function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,burstLimit=0,burstWithoutOpening,dice}){
+function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,burstLimit=0,burstWithoutOpening,dice,bossHp=0}){
  if(!c.available)return null;
  const openingLevel=levelFor('花力開放');
  const canBurst=openingLevel>0;
@@ -532,9 +532,14 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  }));
  const multiplicativeMark=1+num(state.skill.mark)/100;
  for(const source of ['charge','ult','normalFlower','flower','dot','snipe','proc'])totals[source]={count:0,multiplier:0,damage:0,primaryDamage:0};
- const record=(source,multiplier,primaryDamage,otherDamage=0,count=1)=>{
+ let defeatTime=null, damageToBoss=0;
+ const record=(time,source,multiplier,primaryDamage,otherDamage=0,count=1)=>{
   const row=totals[source];
   row.count+=count;row.multiplier+=multiplier;row.primaryDamage+=primaryDamage;row.damage+=primaryDamage+otherDamage;
+  if(bossHp>0&&defeatTime===null){
+   damageToBoss+=primaryDamage;
+   if(damageToBoss>=bossHp)defeatTime=time;
+  }
  };
  for(const event of events){
   const openingEnd=event.phase?activeBurst(event.time)?.openingEnd:undefined;
@@ -549,7 +554,7 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
    if(markMode==='additive')procRate=rates.additiveMark;
    primaryRate=procRate;
   }
-  record(event.source,event.multiplier*event.targets,event.multiplier*primaryRate/100,event.multiplier*rates.average/100*(event.targets-1));
+  record(event.time,event.source,event.multiplier*event.targets,event.multiplier*primaryRate/100,event.multiplier*rates.average/100*(event.targets-1));
   if(isSnipe&&event.markEnd){
    markUntil=event.markEnd;
    markMode=event.openingSnipe&&state.skill.markMode==='off'?'multiplicative':state.skill.markMode;
@@ -562,27 +567,63 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
   const chance=clamp(ready,0,1)*procChance;
   ready-=chance;procs+=chance;
   if(chance>0)unlocks.push({time:event.time+cooldown,chance});
-  record('proc',procMultiplier*chance,procMultiplier*chance*procRate/100,0,chance);
+  record(event.time,'proc',procMultiplier*chance,procMultiplier*chance*procRate/100,0,chance);
  }
  const dealt=Object.values(totals).reduce((sum,row)=>sum+row.damage,0);
  const primaryDamage=Object.values(totals).reduce((sum,row)=>sum+row.primaryDamage,0);
  const multiplier=Object.values(totals).reduce((sum,row)=>sum+row.multiplier,0);
- return {totals,dealt,primaryDamage,multiplier,charges,bursts,openingUses,procs,firstCharge,firstBurst,duration,dps:dealt/duration};
+ return {totals,dealt,primaryDamage,multiplier,charges,bursts,openingUses,procs,firstCharge,firstBurst,duration,dps:dealt/duration,defeatTime};
+}
+function prepareFight(levelFor,pdr){
+ const dice=luckyDiceModel(levelFor);
+ const normal=buildContext(false,'avg',state.base,levelFor,false,pdr);
+ const br=buildContext(true,'avg',state.base,levelFor,true,pdr);
+ const burstWithoutOpening=buildContext(true,'avg',state.base,levelFor,false,pdr);
+ const settings=rotationSkillSettings(levelFor), skills=burstDetails(settings,levelFor);
+ const plans=combos(settings,levelFor).map(combo=>chargePlan(combo,settings));
+ return {normal,br,burstWithoutOpening,skills,dice,plans};
 }
 function compute(levels=state.jobSkillLevels,opener=state.calc.opener==='burst'?'burst':'charge'){
  const targets=Math.max(1,Math.trunc(num(state.calc.targetCount)));
  const levelFor=name=>jobSkillLevel(name,levels);
- const dice=luckyDiceModel(levelFor);
- const normal=buildContext(false,'avg',state.base,levelFor);
- const br=buildContext(true,'avg',state.base,levelFor);
- const burstWithoutOpening=buildContext(true,'avg',state.base,levelFor,false);
- const settings=rotationSkillSettings(levelFor), skills=burstDetails(settings,levelFor);
- const cycles=combos(settings,levelFor).map(combo=>{
-  const plan=chargePlan(combo,settings);
-  return {...plan,run:simulateFight(plan,FIGHT_SECONDS,normal,br,skills,levelFor,{opener,targets,burstWithoutOpening,dice})};
- });
+ const {normal,br,burstWithoutOpening,skills,dice,plans}=prepareFight(levelFor);
+ const cycles=plans.map(plan=>({
+  ...plan,run:simulateFight(plan,FIGHT_SECONDS,normal,br,skills,levelFor,{opener,targets,burstWithoutOpening,dice})
+ }));
  const win=cycles.filter(c=>c.run).sort((a,b)=>b.run.dps-a.run.dps)[0];
  return {normal,br,burstWithoutOpening,skills,cycles,win,opener,targets,dice,seconds:FIGHT_SECONDS};
+}
+const BOSS_KILL_TARGETS=[
+ {name:'貝魯加墨特',hp:430_000_000},
+ {name:'杜那斯',hp:700_000_000}
+];
+const BOSS_KILL_PDR=50, BOSS_KILL_LIMIT=3600;
+function bossKillTime(plan,fight,hp){
+ const {normal,br,burstWithoutOpening,skills,dice}=fight;
+ const options={opener:'charge',targets:1,burstWithoutOpening,dice,bossHp:hp};
+ for(let seconds=FIGHT_SECONDS;;seconds=Math.min(seconds*2,BOSS_KILL_LIMIT)){
+  const run=simulateFight(plan,seconds,normal,br,skills,jobSkillLevel,options);
+  if(run.defeatTime!==null||seconds===BOSS_KILL_LIMIT)return run.defeatTime;
+ }
+}
+function bossKillPage(){
+ const fight=prepareFight(jobSkillLevel,BOSS_KILL_PDR);
+ const rows=BOSS_KILL_TARGETS.map(({name,hp})=>{
+  const times=fight.plans.map(plan=>plan.available?bossKillTime(plan,fight,hp):null);
+  const fastest=Math.min(...times.filter(time=>time!==null));
+  const cells=times.map((time,index)=>{
+   if(!fight.plans[index].available)return '<td>打法未解鎖</td>';
+   if(time===null)return '<td>60 分內未擊殺</td>';
+   const seconds=Math.ceil(time);
+   return `<td><b class="${time===fastest?'good':''}">${Math.floor(seconds/60)} 分 ${seconds%60} 秒</b></td>`;
+  });
+  return `<tr><th scope="row">${name}</th><td>${fmt(hp,0)}</td><td>${pct(BOSS_KILL_PDR,0)}</td>${cells.join('')}</tr>`;
+ });
+ return `<div class="panel"><h2>預估擊殺時間</h2>
+ <p class="desc">單人從零集花力，充滿後爆發，再重新集花力。沿用目前的裝備、技能、Buff 和骰子設定，假設 Boss 全程可攻擊。</p>
+ <div class="tablewrap"><table><thead><tr><th scope="col">Boss</th><th scope="col">預估 HP</th><th scope="col">防禦率</th>${fight.plans.map(plan=>`<th scope="col">${plan.name}</th>`).join('')}</tr></thead><tbody>
+ ${rows.join('')}
+ </tbody></table></div></div>`;
 }
 function completeBurstComparison(fromZero,fromFull){
  const choices=[3,5,10,20];
@@ -913,7 +954,7 @@ function updateLivePreview(){
  for(const [i,set] of (state.equipmentSets||[]).entries()){const el=document.getElementById('gear-set-count-'+i);if(el)el.textContent='目前符合 '+state.equipment.filter(x=>x.enabled!==false&&x.slot!=='extra'&&String(x.name||'').trim()&&x.setName===set.name).length+' 件';}
  for(const [id,value] of Object.entries(items)){const el=document.getElementById(id);if(el)el.textContent=value;}
 }
-function render(){let n=NAV.find(x=>x[0]===tab);document.getElementById('pageTitle').textContent=n[3];document.getElementById('pageDesc').textContent=n[4];document.getElementById('nav').innerHTML=NAV.map(x=>`<button class="navbtn ${x[0]===tab?'active':''}" data-tab="${x[0]}"><span class="emoji">${x[1]}</span>${x[2]}</button>`).join('');let pages={dashboard,character,equipment,links:linkPage,jobSkills:jobSkillsPage,buffs:buffPage,skills:skillPage,boss:bossPage,method:methodPage};document.getElementById('view').innerHTML=pages[tab]();updateLivePreview();save();const editor=document.getElementById('gearEditor');if(editor){editor.showModal();editor.addEventListener('cancel',()=>{gearEditIndex=null;render()})}}
+function render(){let n=NAV.find(x=>x[0]===tab);document.getElementById('pageTitle').textContent=n[3];document.getElementById('pageDesc').textContent=n[4];document.getElementById('nav').innerHTML=NAV.map(x=>`<button class="navbtn ${x[0]===tab?'active':''}" data-tab="${x[0]}"><span class="emoji">${x[1]}</span>${x[2]}</button>`).join('');let pages={dashboard,character,equipment,links:linkPage,jobSkills:jobSkillsPage,buffs:buffPage,skills:skillPage,bossKill:bossKillPage,boss:bossPage,method:methodPage};document.getElementById('view').innerHTML=pages[tab]();updateLivePreview();save();const editor=document.getElementById('gearEditor');if(editor){editor.showModal();editor.addEventListener('cancel',()=>{gearEditIndex=null;render()})}}
 function toast(s){let t=document.getElementById('toast');t.textContent=s;t.style.display='block';clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(()=>t.style.display='none',3100)}
 function addGear(){state.equipment.push({name:'額外來源',slot:'extra',enabled:true,mergedStats:true})}
 function addBuff(phase){state.buffs.push({name:phase==='burst'?'爆發 Buff':'常駐藥水／Buff',phase,enabled:true})}
