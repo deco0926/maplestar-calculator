@@ -22,154 +22,94 @@
     },
     "equipment": [
       {
-        "name": "武器",
-        "enabled": true,
-        "attack": 113,
-        "atkPct": 12,
         "slot": "weapon",
-        "dex": 0,
-        "str": 0,
-        "dexPct": 0,
-        "strPct": 0,
-        "damage": 0,
-        "boss": 0,
-        "critRate": 0,
-        "critDamage": 0,
-        "critMax": 0,
-        "ied": 0,
-        "finalDamage": 0,
-        "allStatPct": 0,
-        "legacyDetails": {
-          "scroll": {},
-          "potential": {},
-          "additional": {}
+        "enabled": true,
+        "mergedStats": true,
+        "potential": {
+          "boss": 30,
+          "attack": 14,
+          "atkPct": 6
         },
-        "mergedStats": true
+        "additional": {
+          "attack": 10,
+          "atkPct": 12
+        },
+        "name": "柯拉凡雷恩赤龍鐵砲 (+5)",
+        "attack": 116,
+        "dex": 5
       },
       {
-        "name": "套服",
-        "enabled": true,
-        "str": 32,
-        "dex": 29,
-        "dexPct": 6,
         "slot": "body",
-        "attack": 0,
-        "strPct": 0,
-        "atkPct": 0,
-        "damage": 0,
-        "boss": 0,
-        "critRate": 0,
-        "critDamage": 0,
-        "critMax": 0,
-        "ied": 0,
-        "finalDamage": 0,
-        "allStatPct": 0,
-        "legacyDetails": {
-          "scroll": {},
-          "potential": {},
-          "additional": {}
+        "enabled": true,
+        "mergedStats": true,
+        "potential": {
+          "dexPct": 6,
+          "str": 24
         },
-        "mergedStats": true
+        "additional": {},
+        "name": "柯拉凡雷恩戰鬥服 (+7)",
+        "bodyKind": "overall",
+        "hp": 50,
+        "str": 8,
+        "dex": 29
       },
       {
-        "name": "手套",
-        "enabled": true,
-        "attack": 3,
-        "dexPct": 4,
-        "dex": 36,
-        "str": 6,
         "slot": "gloves",
-        "strPct": 0,
-        "atkPct": 0,
-        "damage": 0,
-        "boss": 0,
-        "critRate": 0,
-        "critDamage": 0,
-        "critMax": 0,
-        "ied": 0,
-        "finalDamage": 0,
-        "allStatPct": 0,
-        "legacyDetails": {
-          "scroll": {},
-          "potential": {},
-          "additional": {}
+        "enabled": true,
+        "mergedStats": true,
+        "potential": {
+          "dex": 30
         },
-        "mergedStats": true
+        "additional": {
+          "dexPct": 4
+        },
+        "name": "柯拉凡雷恩護手 (+5)",
+        "attack": 15,
+        "hp": 20,
+        "str": 6,
+        "dex": 6
       },
       {
-        "name": "披風",
-        "enabled": true,
-        "str": 1,
-        "dex": 28,
-        "dexPct": 10,
         "slot": "cape",
-        "attack": 0,
-        "strPct": 0,
-        "atkPct": 0,
-        "damage": 0,
-        "boss": 0,
-        "critRate": 0,
-        "critDamage": 0,
-        "critMax": 0,
-        "ied": 0,
-        "finalDamage": 0,
-        "allStatPct": 0,
-        "legacyDetails": {
-          "scroll": {},
-          "potential": {},
-          "additional": {}
+        "enabled": true,
+        "mergedStats": true,
+        "potential": {
+          "dexPct": 6
         },
-        "mergedStats": true
+        "additional": {
+          "dexPct": 4,
+          "dex": 6
+        },
+        "name": "柯拉凡雷恩披風 (+7)",
+        "str": 1,
+        "dex": 22
       },
       {
-        "name": "鞋子",
-        "enabled": true,
-        "str": 5,
-        "dex": 26,
-        "dexPct": 6,
         "slot": "shoes",
-        "attack": 0,
-        "strPct": 0,
-        "atkPct": 0,
-        "damage": 0,
-        "boss": 0,
-        "critRate": 0,
-        "critDamage": 0,
-        "critMax": 0,
-        "ied": 0,
-        "finalDamage": 0,
-        "allStatPct": 0,
-        "legacyDetails": {
-          "scroll": {},
-          "potential": {},
-          "additional": {}
+        "enabled": true,
+        "mergedStats": true,
+        "potential": {
+          "dexPct": 6
         },
-        "mergedStats": true
+        "additional": {
+          "dexPct": 4
+        },
+        "name": "柯拉凡雷恩戰靴 (+7)",
+        "str": 5,
+        "dex": 26
       },
       {
         "slot": "hat",
-        "name": "",
         "enabled": true,
-        "dex": 36,
-        "str": 12,
-        "attack": 0,
-        "dexPct": 6,
-        "strPct": 0,
-        "atkPct": 0,
-        "damage": 0,
-        "boss": 0,
-        "critRate": 0,
-        "critDamage": 0,
-        "critMax": 0,
-        "ied": 0,
-        "finalDamage": 0,
-        "allStatPct": 0,
-        "legacyDetails": {
-          "scroll": {},
-          "potential": {},
-          "additional": {}
+        "mergedStats": true,
+        "potential": {
+          "dexPct": 6,
+          "str": 6
         },
-        "mergedStats": true
+        "additional": {},
+        "name": "柯拉凡雷恩頭盔 (+10)",
+        "str": 6,
+        "dex": 36
       },
       {
         "slot": "badge",
@@ -180,21 +120,29 @@
       },
       {
         "slot": "medal",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
+        "potential": {},
+        "additional": {},
+        "name": "萬聖節躲貓貓達人勳章",
+        "attack": 2,
+        "hp": 300,
         "str": 3,
-        "dex": 3,
-        "attack": 2
+        "dex": 3
       },
       {
         "slot": "face",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
-        "str": 9,
-        "dexPct": 8,
+        "potential": {
+          "dexPct": 6
+        },
+        "additional": {
+          "dexPct": 4
+        },
+        "name": "閃亮的綠色百烈標記",
         "attack": 2,
+        "str": 3,
         "dex": 3
       },
       {
@@ -211,90 +159,137 @@
       },
       {
         "slot": "necklace",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
+        "potential": {
+          "dexPct": 9
+        },
+        "additional": {
+          "dexPct": 6,
+          "dex": 6
+        },
+        "name": "混沌闇黑龍王的項鍊 (+2)",
         "attack": 4,
-        "dex": 30,
+        "hpPct": 10,
         "str": 28,
-        "dexPct": 15
+        "dex": 24
       },
       {
         "slot": "belt",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
-        "dex": 17,
-        "str": 12,
-        "dexPct": 6
+        "potential": {
+          "dexPct": 6,
+          "str": 12,
+          "dex": 6
+        },
+        "additional": {},
+        "name": "鋒利藍色腰帶 (+1)",
+        "hp": 78,
+        "dex": 11
       },
       {
         "slot": "heart",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
+        "potential": {},
+        "additional": {},
+        "name": "金之心 (+3)",
         "attack": 9,
         "str": 5
       },
       {
         "slot": "ring1",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
-        "dex": 4
+        "potential": {},
+        "additional": {},
+        "name": "冒險黑暗爆擊戒指",
+        "attack": 3,
+        "hp": 300,
+        "str": 3,
+        "dex": 3,
+        "critRate": 5,
+        "critDamage": 3
       },
       {
         "slot": "ring2",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
+        "potential": {},
+        "additional": {},
+        "name": "天使祝福",
         "attack": 5
       },
       {
         "slot": "ring3",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
-        "str": 4,
-        "attack": 4
+        "potential": {},
+        "additional": {},
+        "name": "白金十字戒指 (+2)",
+        "attack": 4,
+        "hp": 75,
+        "str": 4
       },
       {
         "slot": "ring4",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
+        "potential": {},
+        "additional": {},
+        "name": "黃金十字戒指",
+        "attack": 1,
+        "hp": 50,
         "str": 2,
-        "dex": 2,
-        "attack": 1
+        "dex": 2
       },
       {
         "slot": "earring",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
-        "dex": 11,
-        "str": 5,
-        "dexPct": 10
+        "potential": {
+          "dexPct": 6,
+          "str": 5,
+          "dex": 5
+        },
+        "additional": {
+          "dexPct": 4
+        },
+        "name": "刀劍耳環 (+3)",
+        "hp": 30,
+        "dex": 6
       },
       {
         "slot": "shoulder",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
+        "potential": {
+          "dexPct": 6,
+          "strPct": 3
+        },
+        "additional": {
+          "dex": 10
+        },
+        "name": "鋒利騎士肩膀",
         "attack": 4,
-        "dex": 8,
-        "dexPct": 6,
-        "strPct": 3
+        "dex": 8
       },
       {
         "slot": "secondary",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
-        "attack": 35,
-        "dex": 4,
-        "allStatPct": 4,
-        "atkPct": 12
+        "potential": {
+          "boss": 40,
+          "attack": 32
+        },
+        "additional": {
+          "atkPct": 21,
+          "strPct": 5
+        },
+        "name": "超越的花彈",
+        "attack": 3,
+        "dex": 4
       },
       {
         "slot": "totem",
@@ -304,9 +299,11 @@
       },
       {
         "slot": "pet1",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
+        "potential": {},
+        "additional": {},
+        "name": "透明寵物披風 (+4)",
         "attack": 4
       },
       {
@@ -323,22 +320,27 @@
       },
       {
         "slot": "set",
-        "name": "",
+        "name": "柯拉凡雷恩套裝（4／5／6 件）",
         "enabled": true,
         "mergedStats": true,
         "str": 24,
         "dex": 24,
         "attack": 10,
-        "ied": 30
+        "hpPct": 10,
+        "ied": 30,
+        "potential": {},
+        "additional": {}
       },
       {
         "slot": "pocket",
-        "name": "",
         "enabled": true,
         "mergedStats": true,
+        "potential": {},
+        "additional": {},
+        "name": "休菲凱曼的親筆簽名",
+        "attack": 2,
         "str": 3,
-        "dex": 3,
-        "attack": 1
+        "dex": 3
       }
     ],
     "links": [
@@ -427,7 +429,7 @@
     "baseline": null,
     "gearNote": "示範基礎數值，非本人實際裝備",
     "equipmentSets": [],
-    "equipmentSchema": 2,
+    "equipmentSchema": 3,
     "jobSkillEffects": [
       {
         "name": "花力強化(青)",
@@ -513,5 +515,29 @@
       "火繩槍劍秘傳": "1"
     },
     "jobSkillToggles": {}
-  }
+  },
+  "previousRevision": "468f7d737d443ece",
+  "updatedEquipmentSlots": [
+    "pocket",
+    "medal",
+    "cape",
+    "gloves",
+    "hat",
+    "face",
+    "body",
+    "necklace",
+    "belt",
+    "shoes",
+    "heart",
+    "earring",
+    "shoulder",
+    "secondary",
+    "weapon",
+    "ring1",
+    "ring2",
+    "ring3",
+    "ring4",
+    "pet1",
+    "set"
+  ]
 }
