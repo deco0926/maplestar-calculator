@@ -322,6 +322,7 @@ function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillL
   weaponConstant,weaponMastery,multi,per100:Math.max(0,averageRaw*multi),iedRemain};
 }
 const BURST_SECONDS=20, ULT_SHOTS=80, FLOWER_SHOTS=12, SNIPE_COOLDOWN=30, FIGHT_SECONDS=180;
+const NORMAL_FLOWER_COOLDOWN=30, NORMAL_FLOWER_CAST_TIME=1.5;
 function combos(s,levelFor){
  const a=s.aStages.reduce((total,value)=>total+num(value),0);
  const b=s.b1*s.b1hits+s.b2*s.b2hits;
@@ -349,7 +350,7 @@ function chargePlan(combo,s){
   const hit=combo.stages.findIndex(stage=>(energyLeft-=stage.energy*factor)<=1e-7);
   if(hit>=0){lastHits=hit+1;elapsed=(count-1)*time+combo.stages[hit].offset}
  }
- return {...combo,time,energy,perCombo,count,elapsed,lastHits,cycleTime:elapsed+BURST_SECONDS};
+ return {...combo,time,energy,perCombo,count,elapsed,lastHits};
 }
 function burstDetails(s,levelFor){
  const dotDuration=flowerDotDuration(levelFor('點花'));
@@ -364,46 +365,65 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor){
  const openingLevel=levelFor('花力開放');
  const canBurst=openingLevel>0;
  const buffSeconds=Math.min(BURST_SECONDS,9+openingLevel);
- const cycleTime=canBurst?c.cycleTime:Infinity;
  const events=[];
  const flowerTimes=[];
- const add=(time,source,multiplier,phase=false)=>{
-  if(time<seconds&&multiplier>0)events.push({time,source,multiplier,phase});
+ const burstWindows=[];
+ const add=(time,source,multiplier,phase=false,markEnd=0)=>{
+  if(time<seconds&&multiplier>0)events.push({time,source,multiplier,phase,markEnd});
  };
- let charges=0,bursts=0;
- for(let start=0;start<seconds;start+=cycleTime){
-  const chargeEnd=canBurst?start+c.elapsed:Infinity;
-  const count=canBurst?c.count:Infinity;
-  for(let index=0;index<count&&start+index*c.time<seconds;index++){
+ const addFlower=(time,source,phase)=>{
+  add(time,source,skills.flowerPerShot+(phase?skills.flowerBurstBonus:0),phase);
+  if(time<seconds&&skills.dotDuration)flowerTimes.push(time);
+ };
+ let time=0, nextNormalFlower=0;
+ const castNormalFlower=()=>{
+  if(!skills.flowerPerShot||time>=seconds||time+1e-9<nextNormalFlower)return;
+  time+=NORMAL_FLOWER_CAST_TIME;
+  addFlower(time,'normalFlower',false);
+  nextNormalFlower=time+NORMAL_FLOWER_COOLDOWN;
+ };
+ let charges=0,bursts=0,firstCharge=null,firstBurst=null;
+ const count=canBurst?c.count:Infinity;
+ while(time<seconds){
+  let index=0;
+  for(;index<count&&time<seconds;index++){
+   castNormalFlower();
+   if(time>=seconds)break;
    const stages=index===count-1?c.stages.slice(0,c.lastHits):c.stages;
-   for(const stage of stages)add(start+index*c.time+stage.offset,'charge',stage.damage);
+   for(const stage of stages)add(time+stage.offset,'charge',stage.damage);
+   time+=index===count-1?c.elapsed-(count-1)*c.time:c.time;
   }
-  if(chargeEnd>=seconds)break;
+  if(index!==count||time>seconds)break;
+  firstCharge??=time;
+  // 花力已滿時，先打出已轉好的常態點花，再用爆發重置冷卻。
+  castNormalFlower();
+  if(time>=seconds)break;
+  const burstStart=time, burstEnd=burstStart+BURST_SECONDS;
+  firstBurst??=burstStart;
+  burstWindows.push({start:burstStart,buffEnd:burstStart+buffSeconds,end:burstEnd});
   charges++;
-  if(chargeEnd+BURST_SECONDS<=seconds)bursts++;
-  for(let i=0;i<ULT_SHOTS;i++)add(chargeEnd+10*i/ULT_SHOTS,'ult',skills.ultPerShot,true);
+  if(burstEnd<=seconds)bursts++;
+  for(let i=0;i<ULT_SHOTS;i++)add(burstStart+10*i/ULT_SHOTS,'ult',skills.ultPerShot,true);
   for(let i=0;i<FLOWER_SHOTS;i++){
    const offset=10+10*i/FLOWER_SHOTS;
-   const time=chargeEnd+offset;
-   const phase=offset<buffSeconds;
-   add(time,'flower',skills.flowerPerShot+(phase?skills.flowerBurstBonus:0),phase);
-   if(time<seconds&&skills.dotDuration)flowerTimes.push(time);
+   addFlower(burstStart+offset,'flower',offset<buffSeconds);
   }
+  // 爆發開啟時重置常態冷卻，爆發射擊另計，結束後可立即蓄能。
+  nextNormalFlower=burstEnd;
+  time=burstEnd;
  }
- const inBurst=time=>{
-  const offset=time%cycleTime-c.elapsed;
-  return canBurst&&offset>=0&&offset<buffSeconds;
- };
+ const activeBurst=time=>burstWindows.find(window=>time>=window.start&&time<window.buffEnd);
  // 每發刷新同一個 DoT，沿用每秒一跳的節拍。
  let expiry=-Infinity, tick=Infinity;
  for(const time of flowerTimes){
-  while(tick<=Math.min(time,expiry)){add(tick,'dot',skills.dotPerTick,inBurst(tick));tick++}
+  while(tick<=Math.min(time,expiry)){add(tick,'dot',skills.dotPerTick,!!activeBurst(tick));tick++}
   if(time>expiry)tick=time+1;
   expiry=time+skills.dotDuration;
  }
- for(;tick<=expiry&&tick<seconds;tick++)add(tick,'dot',skills.dotPerTick,inBurst(tick));
+ for(;tick<=expiry&&tick<seconds;tick++)add(tick,'dot',skills.dotPerTick,!!activeBurst(tick));
  for(let time=0;skills.shot&&time<seconds;time+=SNIPE_COOLDOWN){
-  add(time,'snipe',skills.shot,inBurst(time));
+  const burstWindow=activeBurst(time);
+  add(time,'snipe',skills.shot,!!burstWindow,burstWindow?.end??0);
  }
  // 同時命中時先處理狙擊，讓後續爆發攻擊可使用既有標記選項。
  events.sort((a,b)=>a.time-b.time||Number(b.source==='snipe')-Number(a.source==='snipe'));
@@ -413,7 +433,7 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor){
  const unlocks=[];
  let ready=1, unlockIndex=0, procs=0, markUntil=0;
  const totals={};
- for(const source of ['charge','ult','flower','dot','snipe','proc'])totals[source]={count:0,multiplier:0,damage:0};
+ for(const source of ['charge','ult','normalFlower','flower','dot','snipe','proc'])totals[source]={count:0,multiplier:0,damage:0};
  const record=(source,multiplier,damage,count=1)=>{
   const row=totals[source];row.count+=count;row.multiplier+=multiplier;row.damage+=damage;
  };
@@ -429,7 +449,7 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor){
   }
   const per100=context.per100/100;
   record(event.source,event.multiplier,event.multiplier*per100*critical*mark);
-  if(event.source==='snipe'&&event.phase)markUntil=(Math.floor(event.time/cycleTime)+1)*cycleTime;
+  if(event.source==='snipe'&&event.phase)markUntil=event.markEnd;
   if(!procChance||event.source==='dot')continue;
   // 只將成功觸發的機率質量送入冷卻，失敗仍可在下一次攻擊觸發。
   while(unlockIndex<unlocks.length&&unlocks[unlockIndex].time<=event.time+1e-9){
@@ -442,7 +462,7 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor){
  }
  const dealt=Object.values(totals).reduce((sum,row)=>sum+row.damage,0);
  const multiplier=Object.values(totals).reduce((sum,row)=>sum+row.multiplier,0);
- return {totals,dealt,multiplier,charges,bursts,procs,dps:dealt/seconds};
+ return {totals,dealt,multiplier,charges,bursts,procs,firstCharge,firstBurst,dps:dealt/seconds};
 }
 function compute(levels=state.jobSkillLevels){
  const levelFor=name=>jobSkillLevel(name,levels);
@@ -493,7 +513,7 @@ function barRows(data,key,suffix='',decimal=1){let max=Math.max(0,...data.map(x=
 function dashboard(){
  const result=compute(),{normal,cycles,win,seconds,skills}=result;
  const played=cycles.filter(c=>c.run);
- const sources=[['charge','集花力攻擊'],['ult','奧義．爆'],['flower','點花直擊'],['dot','點花持續傷害'],['snipe','狙擊'],['proc','殘花期望觸發']];
+ const sources=[['charge','集花力攻擊'],['normalFlower','非爆發點花'],['ult','奧義．爆'],['flower','爆發點花直擊'],['dot','點花持續傷害'],['snipe','狙擊'],['proc','殘花期望觸發']];
  const baseline=state.baseline?.seconds===seconds?state.baseline:null;
  const baselineRows=baseline?played.map(c=>{
   const prev=baseline.cycles?.find(x=>x.id===c.id)?.dps;
@@ -511,8 +531,8 @@ function dashboard(){
  <div class="tablewrap"><table><thead><tr><th>比較項目</th>${cycles.map(c=>`<th>${c.name}</th>`).join('')}</tr></thead><tbody>
  ${[
   ['單套集花力倍率',c=>pct(c.damage,0)],['單套時間',c=>fmt(c.time,3)+' 秒'],['每套花力',c=>fmt(c.perCombo,1)],
-  ['花力充滿時間',c=>Number.isFinite(c.elapsed)?fmt(c.elapsed,2)+' 秒':'無法充滿'],
-  ['完整集花力＋爆發時間',c=>Number.isFinite(c.cycleTime)?fmt(c.cycleTime,2)+' 秒':'—'],
+  ['首次花力充滿時間',c=>c.run.firstCharge===null?'本輪未充滿':fmt(c.run.firstCharge,2)+' 秒'],
+  ['首次爆發開始時間',c=>c.run.firstBurst===null?'—':fmt(c.run.firstBurst,2)+' 秒'],
   ['爆發開始／完成次數',c=>c.run.charges+'／'+c.run.bursts],
   ['戰鬥總技能倍率',c=>pct(c.run.multiplier,1)],
   ['平均技能倍率（%／秒）',c=>pct(c.run.multiplier/seconds,1)+'/秒'],
@@ -530,7 +550,8 @@ function dashboard(){
   const row=c.run?.totals[key];
   return `<td>${row?`${fmt(row.count,key==='proc'?2:0)} 次 · ${pct(row.multiplier/seconds,1)}/秒<br><b>${fmt(row.damage/seconds,1)} DPS</b> · ${c.run.dealt>0?pct(row.damage/c.run.dealt*100,2):'—'}</td>`:'—'}</td>`;
  }).join('')}</tr>`).join('')}</tbody></table></div>
- <p class="small muted">奧義與點花在各自的 10 秒內均勻發射。狙擊假設每次都先翻滾，秘傳加成加在每段倍率上，翻滾與施放時間暫視為 0。爆發增益最多覆蓋本輪 20 秒。點花持續傷害每秒跳一次，連續命中刷新時間。殘花每次直擊擲一次，成功才進入冷卻，持續傷害跳數不觸發。</p></div>
+ <p class="small muted">非爆發點花在一套連招結束後蓄能 1.5 秒，命中後開始 30 秒冷卻，開啟爆發會重置。花力仍依 A、B、C 的原公式計算。點花持續傷害每秒跳一次，連續命中刷新時間。</p>
+ <p class="small muted">奧義與點花在各自的 10 秒內均勻發射。狙擊假設每次都先翻滾，秘傳加成加在每段倍率上，翻滾與施放時間暫視為 0。爆發增益最多覆蓋本輪 20 秒。殘花每次直擊擲一次，成功才進入冷卻，持續傷害跳數不觸發。</p></div>
  ${baseline?`<div class="panel"><div class="flex space"><h2>與基準的 DPS 差異</h2><button class="btn sm" data-action="clearBaseline">清除基準</button></div>${baselineRows}</div>`:''}`;
 }
 
@@ -691,7 +712,7 @@ function methodPage(){return `<div class="panel"><h2>怎麼開始？</h2>
  總無視防禦 = 1 − ∏(1 − 每個來源的無視率)<br>Boss防禦乘區 ≈ max(0, 1 − Boss防禦率 × (1 − 無視防禦))<br>
  打王平均 DPS = 指定時間內的期望總傷害 ÷ 戰鬥時間</div>
  <div class="notice"><span>⚠</span><span><b>這是可調的近似模型，不是楓星官方確證公式。</b> 依菖蒲遊戲面板比對，武器係數、熟練度與傷害加成是否真的影響角色視窗表攻，請以你的遊戲面板驗證。熟練度來源可在角色能力頁選擇。</span></div>
- <h3>目前固定假設</h3><ul><li>單體 Boss、所有攻擊命中、無移動及機制中斷。</li><li>點花充能 ×1.5 視為常駐，不額外扣除刷新動畫時間。</li><li>每次爆發滿 20 秒、結束花力歸零，且三種打法使用相同爆發。</li><li>A/B/A+B 施放時間源自你提供的 60 FPS 錄影；暫不自動按攻速 Buff 縮短。</li><li>爆發依序為奧義 80 發與點花 12 發，各占 10 秒。狙擊從開場每 30 秒施放一次。</li><li>殘花以每次直擊的機率及冷卻算期望傷害。點花持續傷害每秒跳一次，連續命中刷新時間。</li></ul>
+ <h3>目前固定假設</h3><ul><li>單體 Boss、所有攻擊命中、無移動及機制中斷。</li><li>充能倍率 ×1.5 視為常駐。非爆發點花占用 1.5 秒，花力由 A、B、C 的攻擊提供。</li><li>每次爆發滿 20 秒、結束花力歸零，且三種打法使用相同爆發。</li><li>A/B/A+B 施放時間源自你提供的 60 FPS 錄影；暫不自動按攻速 Buff 縮短。</li><li>爆發依序為奧義 80 發與點花 12 發，各占 10 秒。狙擊從開場每 30 秒施放一次。</li><li>殘花以每次直擊的機率及冷卻算期望傷害。點花持續傷害每秒跳一次，連續命中刷新時間。</li></ul>
  <h3>如何避免雙重計算</h3><p class="muted">若角色基礎能力已填入包含裝備與 Buff 的最終面板值，不要再於裝備／Buff 清單填同一項加成，否則會重複計算。Boss 傷害與無視防禦不直接當成一般表攻顯示。</p></div>
  <div class="panel"><h2>資料保護</h2><p class="muted">同一瀏覽器與相同檔案網址可沿用 v3 的 localStorage 設定。首次讀取舊版設定會建立額外備份，但不同檔名的 file:// 網址不一定共享儲存資料。<b>升級前請務必先在舊版按「匯出 JSON」；新版再「匯入 JSON」，確認資料完整後才替換舊檔。</b></p></div>`}
 function updateLivePreview(){
@@ -726,12 +747,14 @@ function saveCsv(){
  const rows=[
   ['比較項目',...cycles.map(c=>c.name)],
   ['戰鬥秒數',...cycles.map(()=>seconds)],
-  ['花力充滿秒數',...cycles.map(c=>c.available&&Number.isFinite(c.elapsed)?c.elapsed:'')],
+  ['首次花力充滿秒數',...cycles.map(c=>c.run?.firstCharge??'')],
+  ['首次爆發開始秒數',...cycles.map(c=>c.run?.firstBurst??'')],
   ['戰鬥總技能倍率 %',...cycles.map(c=>c.run?.multiplier??'')],
   ['平均技能倍率 %／秒',...cycles.map(c=>c.run?c.run.multiplier/seconds:'')],
   ['戰鬥總傷害',...cycles.map(c=>c.run?.dealt??'')],
   ['平均 DPS',...cycles.map(c=>c.run?.dps??'')],
   ['狙擊次數',...cycles.map(c=>c.run?.totals.snipe.count??'')],
+  ['非爆發點花次數',...cycles.map(c=>c.run?.totals.normalFlower.count??'')],
   ['殘花期望觸發次數',...cycles.map(c=>c.run?.procs??'')]
  ];
  const body=rows.map(row=>row.map(value=>'"'+String(value).replace(/"/g,'""')+'"').join(',')).join('\r\n');
