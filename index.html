@@ -98,7 +98,7 @@ const JOB_SKILLS=[
  ['花力強化(青)'],
  ['閃雷','散破','花力強化(黃)','體能訓練','火繩槍劍精通'],
  ['火繩槍劍．連 III','昇花','落花','貫破','櫻陣','狙擊','幸運骰子','復仇之心','殘影','花力強化(朱)'],
- ['花尖','點花','奧義．爆','花力開放','雙倍幸運骰子','黎明勇士','火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳']
+ ['花尖','點花','奧義．爆','花力開放','雙倍幸運骰子','覺悟','黎明勇士','黎明之櫻','火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳']
 ];
 const JOB_SKILL_DATA={
  '精靈的祝福':{max:20,attackPerLevel:1,description:'每級物攻 +1，與女皇的祝福取較高值。'},
@@ -133,6 +133,8 @@ const JOB_SKILL_DATA={
   description:'每輪爆發仍打 20 秒。爆擊率與無視防禦增益只在技能冷卻轉好時套用。'},
  '雙倍幸運骰子':{max:5,summary:level=>`${10*level}% 機率擲出兩顆骰子，增益持續 ${180+4*level} 秒。`,
   description:'單 4／雙 4 增加 20／30 個百分點爆擊率，單 5／雙 5 增加 20／30 個百分點傷害，與 Boss 傷害相加。可在打王比較勾選套用骰子期望值。'},
+ '覺悟':{max:30,defaultLevel:0,description:'效果暫不計入試算。'},
+ '黎明之櫻':{max:5,defaultLevel:0,description:'解除異常狀態。Lv. 1 消耗 30 MP，冷卻 600 秒，等級越高冷卻越短。'},
  '黎明勇士':{max:30,toggle:'套用黎明勇士',
   summary:level=>`純配點 STR、DEX +${warriorPercent(level)}%${level===30?'，持續 900 秒':''}。`,
   description:'先按純配點算出增加的 STR、DEX，再和其他固定屬性一起套用裝備百分比。勾選後以增益有效的狀態試算。'},
@@ -243,8 +245,8 @@ function setPath(path,value){let s=path.replace(/\[(\d+)\]/g,'.$1').split('.');l
 function sumEffects(entries){let total={};for(const k of STATS)total[k]=0;let ies=[];let finals=[];for(const e of entries){if(!e||e.enabled===false)continue;for(const k of STATS){if(k==='ied'){if(num(e[k])!==0)ies.push(clamp(num(e[k]),0,100)/100)}else if(k==='finalDamage'){if(num(e[k])!==0)finals.push(num(e[k])/100)}else total[k]+=num(e[k])}}return {total,ies,finals}}
 function linkEntries(){return state.links.map(item=>LINK[item.id]?.effects[clamp((item.level|0)-1,0,4)]||{})}
 function jobSkillLevel(name,levels=state.jobSkillLevels){
- const max=JOB_SKILL_DATA[name].max;
- return clamp(Math.trunc(num(levels[name]??max)),0,max);
+ const {max,defaultLevel=max}=JOB_SKILL_DATA[name];
+ return clamp(Math.trunc(num(levels[name]??defaultLevel)),0,max);
 }
 function jobSkillAttack(name,levelFor=jobSkillLevel){
  return levelFor(name)*JOB_SKILL_DATA[name].attackPerLevel;
