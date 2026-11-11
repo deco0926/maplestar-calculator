@@ -483,7 +483,7 @@ function recommendationPanel(result){
  ${rows.length?`<div class="tablewrap"><table><thead><tr><th>技能</th><th>等級</th><th>試算打法</th><th>總傷害差</th><th>DPS 差</th><th>提升率</th></tr></thead><tbody>
  ${rows.map(({name,level,trial,baseline,gain},i)=>{
   const signed=(value,digits)=>(value>0?'+':'')+fmt(value,digits);
-  return `<tr><td class="${i===0&&gain>0?'good':''}">${name}</td><td>${level} → ${level+1}</td><td>${trial.name}</td>
+  return `<tr><td class="${i===0&&gain>0?'good':''}">${name}</td><td>${level} → ${level+1} <button type="button" class="btn sm" data-action="addRecommendedSkillPoint" data-skill="${esc(name)}" aria-label="${esc(name)}加 1 點">+1</button></td><td>${trial.name}</td>
   <td>${signed(gain,0)}</td><td>${signed(gain/FIGHT_SECONDS,1)}</td><td>${baseline.run.dealt>0?signed(gain/baseline.run.dealt*100,2)+'%':'—'}</td></tr>`;
  }).join('')}</tbody></table></div>`:'<p class="small muted">目前沒有可比較的技能。請確認打法可用，並有未滿等且已知每級效果的技能。</p>'}</div>`;
 }
@@ -740,6 +740,16 @@ function saveCsv(){
 
 function action(el){const cmd=el.dataset.action;if(!cmd)return;
  if(cmd==='skillRecommendations'){tab='dashboard';render();document.getElementById('skill-recommendations').scrollIntoView();return}
+ if(cmd==='addRecommendedSkillPoint'){
+  const name=el.dataset.skill;
+  if(!RECOMMENDABLE_SKILLS.includes(name))return;
+  const level=jobSkillLevel(name);
+  if(level>=JOB_SKILL_DATA[name].max)return;
+  state.jobSkillLevels[name]=level+1;
+  render();
+  toast(`${name}已升到 Lv. ${level+1}`);
+  return;
+ }
  if(cmd==='editGear'){gearEditIndex=Number(el.dataset.index);render();return}
  if(cmd==='closeGear'){gearEditIndex=null;render();return}
  if(cmd==='export'){download('菖蒲_傷害計算器設定.json',JSON.stringify({version:VERSION,exportedAt:new Date().toISOString(),data:state},null,2),'application/json');toast('設定已匯出')}
