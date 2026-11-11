@@ -100,7 +100,6 @@ const JOB_SKILLS=[
  ['火繩槍劍．連 III','昇花','落花','貫破','櫻陣','狙擊','幸運骰子','復仇之心','殘影','花力強化(朱)'],
  ['花尖','點花','奧義．爆','花力開放','雙倍幸運骰子','黎明勇士','火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳']
 ];
-const WARRIOR_PERCENT={1:1,30:15};
 const JOB_SKILL_DATA={
  '精靈的祝福':{max:20,attackPerLevel:1,description:'每級物攻 +1，與女皇的祝福取較高值。'},
  '女皇的祝福':{max:24,attackPerLevel:1,description:'每級物攻 +1，與精靈的祝福取較高值。'},
@@ -134,7 +133,7 @@ const JOB_SKILL_DATA={
   description:'每輪爆發仍打 20 秒。爆擊率與無視防禦增益只在技能冷卻轉好時套用。'},
  '雙倍幸運骰子':{max:5,summary:level=>`${10*level}% 機率擲出兩顆骰子，增益持續 ${180+4*level} 秒。`},
  '黎明勇士':{max:30,toggle:'套用黎明勇士',
-  summary:level=>WARRIOR_PERCENT[level]?`純配點 STR、DEX +${WARRIOR_PERCENT[level]}%${level===30?'，持續 900 秒':''}。`:'此等級效果待確認',
+  summary:level=>`純配點 STR、DEX +${warriorPercent(level)}%${level===30?'，持續 900 秒':''}。`,
   description:'先按純配點算出增加的 STR、DEX，再和其他固定屬性一起套用裝備百分比。勾選後以增益有效的狀態試算。'},
  '火繩槍劍專家':{max:30,effectAt:level=>({attack:level}),
   summary:level=>`技能熟練度 ${expertMastery(level)}%，物攻 +${level}。`},
@@ -268,6 +267,9 @@ function flowerDotDuration(level){
 function flowerOpeningDuration(level){
  return level?10+Math.floor(level/2):0;
 }
+function warriorPercent(level){
+ return Math.ceil(level/2);
+}
 function expertMastery(level){
  return 55+Math.ceil(level/2);
 }
@@ -316,7 +318,7 @@ function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillL
  });
  const ents=[...equipmentEffects(),...linkEntries(),...state.buffs.filter(isActive),...jobEffects,...modeledJobEffects(burst,levelFor,openingActive)];
  const {total:t,ies,finals}=sumEffects(ents);
- const warriorRate=jobSkillToggle('黎明勇士',burst)?num(WARRIOR_PERCENT[levelFor('黎明勇士')])/100:0;
+ const warriorRate=jobSkillToggle('黎明勇士',burst)?warriorPercent(levelFor('黎明勇士'))/100:0;
  const warriorDex=(num(b.pureDex)||num(b.dex))*warriorRate;
  const warriorStr=(num(b.pureStr)||num(b.str))*warriorRate;
  const dex=(num(b.dex)+t.dex+warriorDex)*(1+(num(b.dexPct)+t.dexPct)/100);
@@ -568,13 +570,14 @@ function completeBurstComparison(fromZero,fromFull){
 }
 const RECOMMENDABLE_SKILLS=[
  '精靈的祝福','女皇的祝福','花力強化(青)','花尖','點花','奧義．爆',
- '火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳','花力開放'
+ '火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳','花力開放','黎明勇士'
 ];
 function recommendSkillPoints(result,rotation){
  const pick=trial=>rotation==='best'?trial.win:trial.cycles.find(c=>c.id===rotation&&c.run);
  const baseline=pick(result);
  if(!baseline)return [];
  return RECOMMENDABLE_SKILLS.flatMap(name=>{
+  if(name==='黎明勇士'&&!jobSkillToggle(name))return [];
   const level=jobSkillLevel(name);
   if(level>=JOB_SKILL_DATA[name].max)return [];
   const trial=pick(compute({...state.jobSkillLevels,[name]:level+1},result.opener));
@@ -588,7 +591,7 @@ function recommendationPanel(result){
  const selected=options.some(([key])=>key===rotation)?rotation:'best';
  const rows=recommendSkillPoints(result,selected);
  return `<div class="panel" id="skill-recommendations"><h2>推薦技能點</h2>
- <p class="desc">各技能分別試加 1 點，比較同一配裝與 Boss 設定下的 180 秒總傷害。資料未齊的技能先略過，例如黎明勇士與雙倍幸運骰子。</p>
+ <p class="desc">各技能分別試加 1 點，比較同一配裝與 Boss 設定下的 180 秒總傷害。黎明勇士須勾選套用才會列入，雙倍幸運骰子的效果資料待確認。</p>
  ${select('比較打法','calc.recommendRotation',selected,options)}
  ${rows.length?`<div class="tablewrap"><table><thead><tr><th>技能</th><th>等級</th><th>試算打法</th><th>總傷害差</th><th>DPS 差</th><th>提升率</th></tr></thead><tbody>
  ${rows.map(({name,level,trial,baseline,gain},i)=>{
