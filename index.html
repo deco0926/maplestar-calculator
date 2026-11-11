@@ -100,6 +100,7 @@ const JOB_SKILLS=[
  ['火繩槍劍．連 III','昇花','落花','貫破','櫻陣','狙擊','幸運骰子','復仇之心','殘影','花力強化(朱)'],
  ['花尖','點花','奧義．爆','花力開放','雙倍幸運骰子','黎明勇士','火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳']
 ];
+const WARRIOR_PERCENT={1:1,30:15};
 const JOB_SKILL_DATA={
  '精靈的祝福':{max:20,attackPerLevel:1,description:'每級物攻 +1，與女皇的祝福取較高值。'},
  '女皇的祝福':{max:24,attackPerLevel:1,description:'每級物攻 +1，與精靈的祝福取較高值。'},
@@ -132,8 +133,9 @@ const JOB_SKILL_DATA={
   summary:level=>`${flowerOpeningDuration(level)} 秒內爆擊率 +100 個百分點、無視防禦 +${30+level}%，冷卻 180 秒。`,
   description:'每輪爆發仍打 20 秒。爆擊率與無視防禦增益只在技能冷卻轉好時套用。'},
  '雙倍幸運骰子':{max:5,summary:level=>`${10*level}% 機率擲出兩顆骰子，增益持續 ${180+4*level} 秒。`},
- '黎明勇士':{max:30,summary:level=>level===30?'STR、DEX 等所有屬性 +15%，持續 900 秒。':'此等級效果待確認',
-  description:'全屬性% 的計算基底待驗證。'},
+ '黎明勇士':{max:30,toggle:'套用黎明勇士',
+  summary:level=>WARRIOR_PERCENT[level]?`純配點 STR、DEX +${WARRIOR_PERCENT[level]}%${level===30?'，持續 900 秒':''}。`:'此等級效果待確認',
+  description:'先按純配點算出增加的 STR、DEX，再和其他固定屬性一起套用裝備百分比。勾選後以增益有效的狀態試算。'},
  '火繩槍劍專家':{max:30,effectAt:level=>({attack:level}),
   summary:level=>`技能熟練度 ${expertMastery(level)}%，物攻 +${level}。`},
  '花力強化(紅)':{max:5,effectAt:level=>({critDamage:10+2*level}),burstAt:()=>({bossDamageBonus:20}),
@@ -314,7 +316,11 @@ function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillL
  });
  const ents=[...equipmentEffects(),...linkEntries(),...state.buffs.filter(isActive),...jobEffects,...modeledJobEffects(burst,levelFor,openingActive)];
  const {total:t,ies,finals}=sumEffects(ents);
- const dex=(num(b.dex)+t.dex)*(1+(num(b.dexPct)+t.dexPct)/100), str=(num(b.str)+t.str)*(1+(num(b.strPct)+t.strPct)/100);
+ const warriorRate=jobSkillToggle('黎明勇士',burst)?num(WARRIOR_PERCENT[levelFor('黎明勇士')])/100:0;
+ const warriorDex=(num(b.pureDex)||num(b.dex))*warriorRate;
+ const warriorStr=(num(b.pureStr)||num(b.str))*warriorRate;
+ const dex=(num(b.dex)+t.dex+warriorDex)*(1+(num(b.dexPct)+t.dexPct)/100);
+ const str=(num(b.str)+t.str+warriorStr)*(1+(num(b.strPct)+t.strPct)/100);
  const attack=(num(b.attack)+t.attack)*(1+(num(b.atkPct)+t.atkPct)/100);
  const baseHp=num(b.hp);
  const hp=baseHp>0?Math.max(0,Math.floor((baseHp+t.hp)*(1+(num(b.hpPct)+t.hpPct)/100)+1e-9)):null;
@@ -673,7 +679,9 @@ function updateRangeComparison(normal){
  if(!gainCell)return;
  const selected=RANGE_STATS.find(([key])=>key===state.calc.rangeStat)?.[0]??'dexPct';
  const amount=Math.max(0,num(state.calc.rangeAmount??1));
- const maxWith=(key,bonus)=>buildContext(false,'avg',{...state.base,[key]:num(state.base[key])+bonus}).panelRangeMax;
+ const base=state.base;
+ const comparisonBase={...base,pureDex:num(base.pureDex)||num(base.dex),pureStr:num(base.pureStr)||num(base.str)};
+ const maxWith=(key,bonus)=>buildContext(false,'avg',{...comparisonBase,[key]:num(base[key])+bonus}).panelRangeMax;
  const before=normal.panelRangeMax;
  const after=maxWith(selected,amount);
  const gain=after-before;
@@ -704,11 +712,12 @@ function character(){
  <div class="two"><div class="statline"><span>常態總 DEX</span><b id="live-normal-dex">${fmt(Math.trunc(r.normal.dex),0)}</b></div><div class="statline"><span>常態總 STR</span><b id="live-normal-str">${fmt(Math.trunc(r.normal.str),0)}</b></div></div>
  <div class="statline"><span>爆發 Buff 下最小～最大表攻</span><b id="live-burst-range">${fmt(r.br.panelRangeMin,0)} ～ ${fmt(r.br.panelRangeMax,0)}</b></div>
  <div class="two"><div class="statline"><span>爆發總 DEX</span><b id="live-br-dex">${fmt(Math.trunc(r.br.dex),0)}</b></div><div class="statline"><span>爆發總 STR</span><b id="live-br-str">${fmt(Math.trunc(r.br.str),0)}</b></div></div>
- <h3>面板數值</h3><div class="tablewrap"><table><thead><tr><th scope="col">能力</th><th scope="col">常態</th><th scope="col">爆發</th></tr></thead><tbody>
+ <h3>面板數值</h3>${checkbox('套用黎明勇士','jobSkillToggles.黎明勇士',jobSkillToggle('黎明勇士',false))}<div class="tablewrap"><table><thead><tr><th scope="col">能力</th><th scope="col">常態</th><th scope="col">爆發</th></tr></thead><tbody>
  ${PANEL_STATS.map(([key,label])=>`<tr><td>${label}</td><td id="live-normal-${key}">${formatPanelStat(key,r.normal[key])}</td><td id="live-br-${key}">${formatPanelStat(key,r.br[key])}</td></tr>`).join('')}
  </tbody></table></div></div>
  ${potentialSummary()}
  <div class="panel"><h2>角色基礎能力</h2><p class="desc">自動熟練度採推定基礎 15% 加上專家或精通的技能熟練度。精通等級效果待確認時，沿用手動總熟練度。</p><div class="fields">${select('熟練度來源','base.masteryMode',state.base.masteryMode??'auto',[['auto','依技能自動計算'],['manual','使用手動總熟練度']])}${input('基礎最大 HP','base.hp',b.hp??'','填入未計入裝備、技能與 Buff 的最大 HP','1')}${input('額外最大 HP %','base.hpPct',b.hpPct??0,'僅填未列在其他欄位的加成')}${parts.map(([name,path])=>input(name,path,getPath(path))).join('')}</div><div class="sep"></div><button class="btn" data-action="resetBase">改成空白基礎值</button></div>
+ <div class="panel"><h2>黎明勇士的純配點</h2><p class="desc">預設取角色基礎能力的 DEX、STR。若基礎欄包含其他固定加成，在這裡填入遊戲面板括號左側的純配點。</p><div class="two">${input('純配點 DEX','base.pureDex',b.pureDex||'')}${input('純配點 STR','base.pureStr',b.pureStr||'')}</div></div>
  ${rangeComparison()}
  <div class="panel"><h2>面板數值填寫原則</h2><p class="desc">將固定能力、裝備、傳授與常駐 Buff 分開輸入，頁面會即時顯示預測範圍。若與遊戲面板不一致，請自行調整武器係數、熟練度，並檢查是否漏填或重複加算。此工具不會自動拿實際表攻進行校正。</p></div>`;
 }
