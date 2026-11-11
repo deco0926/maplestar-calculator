@@ -349,7 +349,7 @@ function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillL
  // 不能保證楓星菖蒲的武器係數及表攻增益規則與 Artale 完全相同。
  const rawRange=Math.max(0,(4*dex+str)*attack*weaponConstant/100);
  const rawMin=rawRange*weaponMastery/100;
- const panelFactor=Math.max(0,1+damage/100)*Math.max(0,finalFactor);
+ const panelFactor=Math.max(0,finalFactor);
  const panelRangeMax=rawRange*panelFactor;
  const panelRangeMin=Math.round(panelRangeMax)*weaponMastery/100;
  const panelAverageFactor=panelRangeMax>0?(panelRangeMax+panelRangeMin)/(2*panelRangeMax):0;
@@ -880,12 +880,12 @@ function methodPage(){return `<div class="panel"><h2>怎麼開始？</h2>
  <div class="panel"><h2>公式與模型假設</h2>
  <div class="formula">最大表攻 ≈ (4 × DEX + STR) × 物攻 × 武器係數 / 100 × 表攻增益乘區<br>
  最小表攻 ≈ 四捨五入（面板最大表攻 × 總武器熟練度%）<br>
- 表攻增益乘區（暫定） ≈ max(0,1 + 一般傷害%) × 最終傷害乘積<br>
- 打王每100%倍率期望傷害 ≈ (未乘表攻增益的最小與最大值之平均) × (1 + 一般傷害% + Boss傷害%) × 最終傷害 × 爆擊期望 × 防禦乘區 × 其他倍率<br>
+ 表攻增益乘區 ≈ 最終傷害乘積<br>
+ 打王每100%倍率期望傷害 ≈ (未乘表攻增益的最小與最大值之平均) × (1 + 傷害% + Boss 傷害%) × 最終傷害 × 爆擊期望 × 防禦乘區 × 其他倍率<br>
  平均爆擊乘區 ≈ 1 + 爆率 × [0.35 + 平均額外爆傷% + 最大爆傷%/2]<br>
  總無視防禦 = 1 − ∏(1 − 每個來源的無視率)<br>Boss防禦乘區 ≈ max(0, 1 − Boss防禦率 × (1 − 無視防禦))<br>
  打王平均 DPS = 指定時間內的期望總傷害 ÷ 戰鬥時間</div>
- <div class="notice"><span>⚠</span><span><b>這是可調的近似模型，不是楓星官方確證公式。</b> 依菖蒲遊戲面板比對，武器係數、熟練度與傷害加成是否真的影響角色視窗表攻，請以你的遊戲面板驗證。熟練度來源可在角色能力頁選擇。</span></div>
+ <div class="notice"><span>⚠</span><span><b>這是可調的近似模型，不是楓星官方確證公式。</b> 楓星的傷害%保留在角色能力欄，打王時和 Boss 傷害%相加。武器係數與熟練度可用遊戲面板核對。熟練度來源可在角色能力頁選擇。</span></div>
  <h3>目前固定假設</h3><ul><li>所有怪物防禦相同，全程在攻擊範圍內。</li><li>充能倍率 ×1.5 視為常駐。非爆發點花占用 1.5 秒，花力由 A、B、C 的攻擊提供。</li><li>每次爆發滿 20 秒、結束花力歸零，且三種打法使用相同爆發。</li><li>A/B/A+B 施放時間源自你提供的 60 FPS 錄影；暫不自動按攻速 Buff 縮短。</li><li>爆發依序為奧義 80 發與點花 12 發，各占 10 秒。狙擊從開場每 30 秒施放一次。</li><li>殘花以每次直擊的機率及冷卻算期望傷害。點花持續傷害每秒跳一次，連續命中刷新時間。</li></ul>
  <h3>如何避免雙重計算</h3><p class="muted">若角色基礎能力已填入包含裝備與 Buff 的最終面板值，不要再於裝備／Buff 清單填同一項加成，否則會重複計算。Boss 傷害與無視防禦不直接當成一般表攻顯示。</p></div>
  <div class="panel"><h2>資料保護</h2><p class="muted">同一瀏覽器與相同檔案網址可沿用 v3 的 localStorage 設定。首次讀取舊版設定會建立額外備份，但不同檔名的 file:// 網址不一定共享儲存資料。<b>升級前請務必先在舊版按「匯出 JSON」；新版再「匯入 JSON」，確認資料完整後才替換舊檔。</b></p></div>`}
