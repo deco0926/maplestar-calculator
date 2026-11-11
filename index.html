@@ -129,7 +129,7 @@ const JOB_SKILL_DATA={
  '狙擊':{max:20,description:'滿等 1,695% × 4，必定爆擊，冷卻 30 秒。'},
  '奧義．爆':{max:30,summary:level=>`${fourthJobMultipliers(0,0,level,0).ult}% × 3`},
  '花力開放':{max:20,burstAt:level=>({critRate:100,ied:30+level}),
-  summary:level=>`${9+level} 秒內爆擊率 +100 個百分點、無視防禦 +${30+level}%，冷卻 180 秒。`,
+  summary:level=>`${flowerOpeningDuration(level)} 秒內爆擊率 +100 個百分點、無視防禦 +${30+level}%，冷卻 180 秒。`,
   description:'每輪爆發仍打 20 秒。爆擊率與無視防禦增益只在技能冷卻轉好時套用。'},
  '雙倍幸運骰子':{max:5,summary:level=>`${10*level}% 機率擲出兩顆骰子，增益持續 ${180+4*level} 秒。`},
  '黎明勇士':{max:30,summary:level=>level===30?'STR、DEX 等所有屬性 +15%，持續 900 秒。':'此等級效果待確認',
@@ -243,6 +243,9 @@ function flowerBurstBonus(level){
 }
 function flowerDotDuration(level){
  return level?1+Math.floor(level/10):0;
+}
+function flowerOpeningDuration(level){
+ return level?10+Math.floor(level/2):0;
 }
 function expertMastery(level){
  return 55+Math.ceil(level/2);
@@ -373,7 +376,7 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  const openingLevel=levelFor('花力開放');
  const canBurst=openingLevel>0;
  if(burstLimit&&(!canBurst||!Number.isFinite(c.count)))return null;
- const buffSeconds=Math.min(BURST_SECONDS,9+openingLevel);
+ const openingDuration=flowerOpeningDuration(openingLevel);
  const events=[];
  const flowerTimes=[];
  const burstWindows=[];
@@ -417,13 +420,14 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
    openingUses++;
   }
   firstBurst??=burstStart;
-  burstWindows.push({start:burstStart,buffEnd:burstStart+buffSeconds,end:burstEnd,openingActive});
+  const openingEnd=openingActive?burstStart+openingDuration:burstStart;
+  burstWindows.push({start:burstStart,end:burstEnd,openingEnd});
   charges++;
   if(burstEnd<=seconds)bursts++;
   for(let i=0;i<ULT_SHOTS;i++)add(burstStart+10*i/ULT_SHOTS,'ult',skills.ultPerShot,true);
   for(let i=0;i<FLOWER_SHOTS;i++){
    const offset=10+10*i/FLOWER_SHOTS;
-   addFlower(burstStart+offset,'flower',offset<buffSeconds);
+   addFlower(burstStart+offset,'flower',true);
   }
   // 爆發開啟時重置常態冷卻，爆發射擊另計，結束後可立即蓄能。
   nextNormalFlower=burstEnd;
@@ -434,7 +438,7 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
   }
  }
  if(burstLimit&&finishTime===null)return null;
- const activeBurst=time=>burstWindows.find(window=>time>=window.start&&time<window.buffEnd);
+ const activeBurst=time=>burstWindows.find(window=>time>=window.start&&time<window.end);
  // 每發刷新同一個 DoT，沿用每秒一跳的節拍。
  let expiry=-Infinity, tick=Infinity;
  for(const time of flowerTimes){
@@ -470,7 +474,8 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
   row.count+=count;row.multiplier+=multiplier;row.primaryDamage+=primaryDamage;row.damage+=primaryDamage+otherDamage;
  };
  for(const event of events){
-  const context=event.phase?(activeBurst(event.time)?.openingActive?burst:burstWithoutOpening):normal;
+  const openingEnd=event.phase?activeBurst(event.time)?.openingEnd:undefined;
+  const context=!event.phase?normal:event.time<(openingEnd??0)?burst:burstWithoutOpening;
   const critical=event.source==='snipe'?(1+context.critBonus)/context.critFactor:1;
   const marked=event.time<markUntil&&event.source!=='snipe';
   let mark=1;
@@ -536,7 +541,7 @@ function completeBurstComparison(fromZero,fromFull){
 }
 const RECOMMENDABLE_SKILLS=[
  '精靈的祝福','女皇的祝福','花力強化(青)','花尖','點花','奧義．爆',
- '火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳'
+ '火繩槍劍專家','花力強化(紅)','殘花','火繩槍劍秘傳','花力開放'
 ];
 function recommendSkillPoints(result,rotation){
  const pick=trial=>rotation==='best'?trial.win:trial.cycles.find(c=>c.id===rotation&&c.run);
@@ -556,7 +561,7 @@ function recommendationPanel(result){
  const selected=options.some(([key])=>key===rotation)?rotation:'best';
  const rows=recommendSkillPoints(result,selected);
  return `<div class="panel" id="skill-recommendations"><h2>推薦技能點</h2>
- <p class="desc">各技能分別試加 1 點，比較同一配裝與 Boss 設定下的 180 秒總傷害。資料未齊的技能先略過，例如黎明勇士、雙倍幸運骰子與花力開放。</p>
+ <p class="desc">各技能分別試加 1 點，比較同一配裝與 Boss 設定下的 180 秒總傷害。資料未齊的技能先略過，例如黎明勇士與雙倍幸運骰子。</p>
  ${select('比較打法','calc.recommendRotation',selected,options)}
  ${rows.length?`<div class="tablewrap"><table><thead><tr><th>技能</th><th>等級</th><th>試算打法</th><th>總傷害差</th><th>DPS 差</th><th>提升率</th></tr></thead><tbody>
  ${rows.map(({name,level,trial,baseline,gain},i)=>{
