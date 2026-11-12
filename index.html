@@ -574,11 +574,11 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  const multiplier=Object.values(totals).reduce((sum,row)=>sum+row.multiplier,0);
  return {totals,dealt,primaryDamage,multiplier,charges,bursts,openingUses,procs,firstCharge,firstBurst,duration,dps:dealt/duration,defeatTime};
 }
-function prepareFight(levelFor,pdr){
+function prepareFight(levelFor,pdr,base=state.base){
  const dice=luckyDiceModel(levelFor);
- const normal=buildContext(false,'avg',state.base,levelFor,false,pdr);
- const br=buildContext(true,'avg',state.base,levelFor,true,pdr);
- const burstWithoutOpening=buildContext(true,'avg',state.base,levelFor,false,pdr);
+ const normal=buildContext(false,'avg',base,levelFor,false,pdr);
+ const br=buildContext(true,'avg',base,levelFor,true,pdr);
+ const burstWithoutOpening=buildContext(true,'avg',base,levelFor,false,pdr);
  const settings=rotationSkillSettings(levelFor), skills=burstDetails(settings,levelFor);
  const plans=combos(settings,levelFor).map(combo=>chargePlan(combo,settings));
  return {normal,br,burstWithoutOpening,skills,dice,plans};
@@ -765,7 +765,22 @@ function rangeComparison(){
  return `<div class="panel"><h2>表攻提升比較</h2><p class="desc">以目前常態配裝的最大表攻比較。百分比欄位以百分點輸入，例如 DEX % 填 1 代表增加 1 個百分點。</p>
  <div class="two">${select('增加的屬性','calc.rangeStat',state.calc.rangeStat??'dexPct',RANGE_STATS)}${input('增加量','calc.rangeAmount',state.calc.rangeAmount??1)}</div>
  <div class="statline"><span>最大表攻提升</span><b id="range-gain">—</b></div>
+ <div class="statline"><span>打王傷害提升</span><b id="range-damage-gain">—</b></div>
+ <p class="small muted">C 四連擊＋花尖，單體 Boss 防禦率 50%，比較 180 秒總傷害。開場沿用傷害總覽設定。</p>
  <div class="two">${RANGE_STATS.map(([key,label])=>`<div class="statline"><span>等效 ${label}</span><b id="range-equivalent-${key}">—</b></div>`).join('')}</div></div>`;
+}
+function rangeDamageGain(raisedBase){
+ const fight=prepareFight(jobSkillLevel,50);
+ const plan=fight.plans.find(plan=>plan.id==='ab');
+ if(!plan.available)return 'C 循環未解鎖';
+ const opener=state.calc.opener==='burst'?'burst':'charge';
+ const damage=({normal,br,burstWithoutOpening,skills,dice})=>simulateFight(
+  plan,FIGHT_SECONDS,normal,br,skills,jobSkillLevel,{opener,targets:1,burstWithoutOpening,dice}
+ ).dealt;
+ const before=damage(fight);
+ if(before<=0)return '基準傷害為 0';
+ const gain=(damage(prepareFight(jobSkillLevel,50,raisedBase))/before-1)*100;
+ return (gain>0?'+':'')+pct(gain,2);
 }
 function updateRangeComparison(normal){
  const gainCell=document.getElementById('range-gain');
@@ -774,11 +789,13 @@ function updateRangeComparison(normal){
  const amount=Math.max(0,num(state.calc.rangeAmount??1));
  const base=state.base;
  const comparisonBase={...base,pureDex:num(base.pureDex)||num(base.dex),pureStr:num(base.pureStr)||num(base.str)};
- const maxWith=(key,bonus)=>buildContext(false,'avg',{...comparisonBase,[key]:num(base[key])+bonus}).panelRangeMax;
+ const baseWith=(key,bonus)=>({...comparisonBase,[key]:num(base[key])+bonus});
+ const maxWith=(key,bonus)=>buildContext(false,'avg',baseWith(key,bonus)).panelRangeMax;
  const before=normal.panelRangeMax;
  const after=maxWith(selected,amount);
  const gain=after-before;
  gainCell.textContent=`+${fmt(Math.round(after)-Math.round(before),0)}（${fmt(before,0)} → ${fmt(after,0)}）`;
+ document.getElementById('range-damage-gain').textContent=rangeDamageGain(baseWith(selected,amount));
  for(const [key] of RANGE_STATS){
   const perUnit=maxWith(key,1)-before;
   const equivalent=key===selected?amount:before>0&&perUnit>0?gain/perUnit:null;
