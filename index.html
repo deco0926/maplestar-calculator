@@ -446,7 +446,7 @@ function chargePlan(combo,s){
   const hit=combo.stages.findIndex(stage=>(energyLeft-=stage.energy*factor)<=1e-7);
   if(hit>=0){lastHits=hit+1;elapsed=(count-1)*time+combo.stages[hit].offset}
  }
- return {...combo,time,energy,perCombo,count,elapsed,lastHits};
+ return {...combo,time,energy,perCombo,count,elapsed,lastHits,chargeTarget:target,chargeFactor:factor};
 }
 function burstDetails(s,levelFor){
  const dotDuration=flowerDotDuration(levelFor('點花'));
@@ -456,7 +456,7 @@ function burstDetails(s,levelFor){
   shot:levelFor('狙擊')===20?(1695+secretSnipeBonus(levelFor('火繩槍劍秘傳')))*4:0
  };
 }
-function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,burstLimit=0,burstWithoutOpening,dice,bossHp=0}){
+function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,burstLimit=0,burstWithoutOpening,dice,bossHp=0,invulnerability}){
  if(!c.available)return null;
  const openingLevel=levelFor('花力開放');
  const canBurst=openingLevel>0;
@@ -465,16 +465,25 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  const events=[];
  const flowerTimes=[];
  const burstWindows=[];
+ const nextVulnerable=(time,window=0)=>{
+  if(!invulnerability)return time;
+  const {period,duration}=invulnerability;
+  const start=Math.max(period,Math.floor(time/period)*period);
+  if(time>=start&&time<start+duration)return start+duration;
+  const next=time<start?start:start+period;
+  return window>0&&time+window>next+1e-9?next+duration:time;
+ };
  const add=(time,source,multiplier,phase=false,{targetCap=TARGET_CAP[source],markEnd=0,openingSnipe=false}={})=>{
-  if(time<seconds&&multiplier>0)events.push({time,source,multiplier,phase,markEnd,openingSnipe,targets:Math.min(targets,targetCap)});
+  if(time<seconds&&multiplier>0&&nextVulnerable(time)===time)events.push({time,source,multiplier,phase,markEnd,openingSnipe,targets:Math.min(targets,targetCap)});
  };
  const addFlower=(time,source,phase)=>{
   add(time,source,skills.flowerPerShot+(phase?skills.flowerBurstBonus:0),phase);
-  if(time<seconds&&skills.dotDuration)flowerTimes.push(time);
+  if(time<seconds&&skills.dotDuration&&nextVulnerable(time)===time)flowerTimes.push(time);
  };
  let time=0, nextNormalFlower=0, nextOpening=0;
  const castNormalFlower=()=>{
   if(!skills.flowerPerShot||time>=seconds||time+1e-9<nextNormalFlower)return;
+  if(nextVulnerable(time+NORMAL_FLOWER_CAST_TIME)!==time+NORMAL_FLOWER_CAST_TIME)return;
   time+=NORMAL_FLOWER_CAST_TIME;
   addFlower(time,'normalFlower',false);
   nextNormalFlower=time+NORMAL_FLOWER_COOLDOWN;
@@ -482,22 +491,60 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  const openWithBurst=opener==='burst'&&canBurst;
  let charges=0,bursts=0,openingUses=0,firstCharge=openWithBurst?0:null,firstBurst=null,finishTime=null;
  const count=canBurst?c.count:Infinity;
+ const chargeWithInvulnerability=()=>{
+  let energy=0;
+  while(time<seconds){
+   time=nextVulnerable(time);
+   castNormalFlower();
+   if(time>=seconds)break;
+   for(const stage of c.stages){
+    const hitTime=time+stage.offset;
+    if(hitTime>=seconds||nextVulnerable(hitTime)!==hitTime)continue;
+    add(hitTime,'charge',stage.damage,false,{targetCap:stage.targetCap});
+    energy+=stage.energy*c.chargeFactor;
+    if(canBurst&&energy+1e-7>=c.chargeTarget&&state.calc.finish==='partial'){
+     time=hitTime;
+     return true;
+    }
+   }
+   time+=c.time;
+   if(canBurst&&energy+1e-7>=c.chargeTarget)return true;
+  }
+  return false;
+ };
  while(time<seconds){
   if(!openWithBurst||firstBurst!==null){
-   let index=0;
-   for(;index<count&&time<seconds;index++){
-    castNormalFlower();
-    if(time>=seconds)break;
-    const stages=index===count-1?c.stages.slice(0,c.lastHits):c.stages;
-    for(const stage of stages)add(time+stage.offset,'charge',stage.damage,false,{targetCap:stage.targetCap});
-    time+=index===count-1?c.elapsed-(count-1)*c.time:c.time;
+   if(invulnerability){
+    if(!chargeWithInvulnerability())break;
+   }else{
+    let index=0;
+    for(;index<count&&time<seconds;index++){
+     castNormalFlower();
+     if(time>=seconds)break;
+     const stages=index===count-1?c.stages.slice(0,c.lastHits):c.stages;
+     for(const stage of stages)add(time+stage.offset,'charge',stage.damage,false,{targetCap:stage.targetCap});
+     time+=index===count-1?c.elapsed-(count-1)*c.time:c.time;
+    }
+    if(index!==count||time>seconds)break;
    }
-   if(index!==count||time>seconds)break;
    firstCharge??=time;
    // 花力已滿時，先打出已轉好的常態點花，再用爆發重置冷卻。
    castNormalFlower();
    if(time>=seconds)break;
   }
+  const safeBurst=nextVulnerable(time,BURST_SECONDS);
+  if(safeBurst>time){
+   const until=Math.min(seconds,safeBurst-invulnerability.duration);
+   while(time<until){
+    if(time+NORMAL_FLOWER_CAST_TIME<until)castNormalFlower();
+    for(const stage of c.stages){
+     if(time+stage.offset<until)add(time+stage.offset,'charge',stage.damage,false,{targetCap:stage.targetCap});
+    }
+    time+=c.time;
+   }
+   time=safeBurst;
+  }
+  if(time>=seconds)break;
   const burstStart=time, burstEnd=burstStart+BURST_SECONDS;
   const openingActive=burstStart+1e-9>=nextOpening;
   if(openingActive){
@@ -541,6 +588,8 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  // 完整輪次停止出招後，等最後一次點花的持續傷害跳完。
  const duration=finishTime===null?seconds:Math.max(finishTime,lastDotTick);
  for(let time=0;skills.shot&&time<attackEnd;time+=SNIPE_COOLDOWN){
+  time=nextVulnerable(time);
+  if(time>=attackEnd)break;
   const burstWindow=activeBurst(time);
   const openingSnipe=openWithBurst&&time===0;
   add(time,'snipe',skills.shot,!!burstWindow&&!openingSnipe,{markEnd:burstWindow?.end??0,openingSnipe});
@@ -622,7 +671,8 @@ function compute(levels=state.jobSkillLevels,opener=state.calc.opener==='burst'?
 }
 const BOSS_KILL_TARGETS=[
  {name:'貝魯加墨特',hp:430_000_000},
- {name:'杜那斯',hp:700_000_000}
+ {name:'杜那斯',hp:700_000_000},
+ {name:'希拉',hp:2_450_000_000,pdr:40,invulnerability:{period:80,duration:10}}
 ];
 const BOSS_KILL_PDR=50, BOSS_KILL_LIMIT=3600;
 function parseCustomBoss(values){
@@ -640,9 +690,9 @@ function customBossForm(index,{hp='',pdr=BOSS_KILL_PDR,targets=1}={}){
  </div><div class="actionline"><button type="submit" class="btn primary">${adding?'新增 Boss':'儲存並重算'}</button>
  ${adding?'':`<button type="button" class="btn sm danger" data-action="removeCustomBoss" data-index="${index}">移除</button>`}</div></form>`;
 }
-function bossKillTime(plan,fight,{hp,targets},opener){
+function bossKillTime(plan,fight,{hp,targets,invulnerability},opener){
  const {normal,br,burstWithoutOpening,skills,dice}=fight;
- const options={opener,targets,burstWithoutOpening,dice,bossHp:hp};
+ const options={opener,targets,burstWithoutOpening,dice,bossHp:hp,invulnerability};
  for(let seconds=FIGHT_SECONDS;;seconds=Math.min(seconds*2,BOSS_KILL_LIMIT)){
   const run=simulateFight(plan,seconds,normal,br,skills,jobSkillLevel,options);
   if(run.defeatTime!==null||seconds===BOSS_KILL_LIMIT)return run.defeatTime;
@@ -650,16 +700,16 @@ function bossKillTime(plan,fight,{hp,targets},opener){
 }
 function bossKillPage(){
  const canBurst=jobSkillLevel('花力開放')>0;
- const presets=BOSS_KILL_TARGETS.map(boss=>({...boss,pdr:BOSS_KILL_PDR,targets:1}));
+ const presets=BOSS_KILL_TARGETS.map(boss=>({pdr:BOSS_KILL_PDR,targets:1,...boss}));
  const customs=state.calc.customBosses.map((boss,index)=>({...boss,name:`自訂 Boss ${index+1}`,index}));
  const fights=new Map();
- return `<p class="desc">單人模擬，沿用目前的裝備、技能、Buff 和骰子設定，假設 Boss 全程可攻擊。</p>
+ return `<p class="desc">單人模擬，沿用目前的裝備、技能、Buff 和骰子設定。各 Boss 的特殊機制列在擊殺時間表上方。</p>
  ${canBurst?'':'<p class="small muted">花力開放尚未習得，兩種開場都會持續集花力。</p>'}
  <div class="panel"><h2>新增自訂 Boss</h2>
  <p class="desc">填入整條血量。技能同時命中多個部位時，合計扣除共用 HP。</p>
  ${customBossForm(null)}</div>
  ${[...customs,...presets].map(boss=>{
-  const {name,hp,pdr,targets,index}=boss;
+  const {name,hp,pdr,targets,index,invulnerability}=boss;
   if(!fights.has(pdr))fights.set(pdr,prepareFight(jobSkillLevel,pdr));
   const fight=fights.get(pdr);
   const columns=OPENERS.map(([opener,label])=>{
@@ -677,6 +727,7 @@ function bossKillPage(){
    return `<tr><th scope="row">${plan.name}</th>${cells.join('')}</tr>`;
   });
   return `<div class="panel"><h2>${name}</h2><p class="desc">總 HP ${fmt(hp,0)} · 防禦率 ${pct(pdr,2)} · ${fmt(targets,0)} 個共用血條目標</p>
+  ${invulnerability?`<p class="desc">每 ${invulnerability.period} 秒無敵 ${invulnerability.duration} 秒，首次從開打後第 ${invulnerability.period} 秒開始。無敵時無法造成傷害或集花力。花力滿後可繼續普攻，等到能打完整段 20 秒才開爆發。</p>`:''}
   <div class="tablewrap"><table><thead><tr><th scope="col">打法</th>${columns.map(({label})=>`<th scope="col">${label}</th>`).join('')}</tr></thead>
   <tbody>${rows.join('')}</tbody></table></div>
   ${index===undefined?'':`<details><summary>編輯自訂 Boss</summary>${customBossForm(index,boss)}</details>`}</div>`;
