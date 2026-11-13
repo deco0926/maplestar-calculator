@@ -15,7 +15,32 @@
 .order-cell{white-space:nowrap;text-align:left;padding:7px 8px}.handle{border:1px solid var(--stroke);border-radius:7px;background:#1c3551;color:#bfe3ff;padding:5px 9px;margin-right:5px;cursor:grab;touch-action:none}.handle:active{cursor:grabbing}.order-btn{border:1px solid var(--stroke);border-radius:7px;background:#192b40;color:#e8efff;padding:5px 8px;margin:0 1px}.order-btn:disabled{opacity:.26;cursor:not-allowed}tr.drag-target{outline:2px dashed var(--pink);outline-offset:-3px;background:#283149!important}.mini-range .muted{font-size:11px}
 @media(max-width:640px){.mini-range{gap:8px;padding:10px 12px}.mini-range>div{width:100%;justify-content:space-between}.mini-range strong{font-size:16px}}
 
-.gear-table{table-layout:fixed;width:100%;white-space:normal}.gear-table th,.gear-table td{text-align:left;padding:8px 10px;overflow-wrap:anywhere}.gear-table th:nth-child(1){width:155px}.gear-table th:nth-child(2){width:55px}.gear-table th:nth-child(3){width:auto}.gear-table th:last-child{width:65px}.gear-summary{font-size:12px;color:var(--muted)}.gear-name{border:0;background:none;color:var(--blue);padding:0;text-align:left}.gear-table small{display:block}.gear-dialog{width:min(760px,94vw);max-height:90vh;overflow-y:auto;background:var(--panel);color:var(--text);border:1px solid var(--stroke);border-radius:16px;padding:22px}.gear-dialog::backdrop{background:#000a}.gear-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.gear-dialog h2{margin:0 0 10px}@media(max-width:640px){.gear-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.gear-table th:nth-child(1){width:95px}.gear-table th:nth-child(2){width:40px}.gear-table th:last-child{width:60px}.gear-table th,.gear-table td{padding:6px 3px}.gear-summary{font-size:10px}}
+.gear-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(245px,310px);align-items:start;gap:16px}
+.gear-board,.gear-preview{min-width:0;border:1px solid #344962;border-radius:13px;background:#0c1728}
+.gear-board{padding:14px}.gear-group+.gear-group{margin-top:14px}.gear-group h3{margin:0 0 7px;color:var(--muted);font-size:12px}
+.gear-slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.gear-slot{display:grid;align-content:center;justify-items:center;gap:2px;min-width:0;min-height:64px;padding:5px 2px;border:1px solid #344963;border-radius:8px;background:linear-gradient(#253650,#15243a);color:var(--text);font-size:11px;line-height:1.2;text-align:center}
+.gear-slot:hover,.gear-slot[aria-pressed="true"]{border-color:var(--pink);background:#382841}
+.gear-slot:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.gear-slot.empty,.gear-slot.inactive{background:#111d2e;color:var(--muted)}.gear-slot.empty .gear-icon,.gear-slot.inactive .gear-icon{opacity:.55}
+.gear-icon{font-size:25px;line-height:1.15}.gear-slot small{font-size:10px}
+.gear-preview{position:sticky;top:16px;padding:14px}.gear-preview-content{min-width:0}
+.gear-detail-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.gear-detail-header .gear-icon{display:grid;place-items:center;width:42px;height:42px;flex:none;border:1px solid #526487;border-radius:8px;background:#1e2b45}
+.gear-detail-header h3{margin:0;overflow-wrap:anywhere}.gear-detail-header p{margin:0}
+.gear-details{border-top:1px solid var(--stroke);padding-top:7px;margin:8px 0 0}
+.gear-details h4{margin:0 0 3px;font-size:12px;color:var(--blue)}.gear-details.potential h4{color:#d8aaff}.gear-details.additional h4{color:#9ce6ba}
+.gear-details dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 10px;margin:0;font-size:12px}
+.gear-details dl div{display:flex;justify-content:space-between;gap:4px}.gear-details dd{margin:0;white-space:nowrap;font-variant-numeric:tabular-nums}
+.gear-detail-actions{display:flex;justify-content:flex-end;margin-top:12px}
+.gear-dialog{width:min(760px,94vw);max-height:90vh;overflow-y:auto;background:var(--panel);color:var(--text);border:1px solid var(--stroke);border-radius:16px;padding:22px}.gear-dialog::backdrop{background:#000a}
+.gear-preview-dialog{width:min(390px,94vw)}.gear-preview-dialog .gear-dialog-close{display:flex;justify-content:flex-end}
+.gear-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.gear-dialog h2{margin:0 0 10px}
+@media(max-width:1040px){.gear-preview{top:66px}}
+@media(max-width:760px),(hover:none){.gear-layout{display:block}.gear-preview{display:none}}
+@media(max-width:640px){.gear-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.gear-board{padding:8px}.gear-slots{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(hover:hover) and (min-width:761px){.gear-touch-help{display:none}}
+@media(max-width:760px),(hover:none){.gear-hover-help{display:none}}
 </style>
 </head>
 <body>
@@ -874,37 +899,81 @@ function gearTotals(parts){
 function gearText(label,path,value){return '<label class="field"><span>'+label+'</span><input data-kind="text" data-path="'+path+'" value="'+esc(value)+'"></label>'}
 
 
-const GEAR_ICONS={badge:'🔰',medal:'🏅',pocket:'👝',cape:'🧣',gloves:'🧤',hat:'🎩',face:'🎭',eye:'👓',body:'👕',pants:'👖',necklace:'📿',belt:'➰',shoes:'👢',heart:'💛',earring:'💎',shoulder:'🛡️',weapon:'⚔️',secondary:'🗡️',totem:'🗿',set:'🧩'};
-function gearLabel(slot){
+const GEAR_ICONS={badge:'🔰',medal:'🏅',pocket:'👝',cape:'🧣',gloves:'🧤',hat:'🎩',face:'🎭',eye:'👓',body:'🧥',pants:'👖',necklace:'📿',belt:'➰',shoes:'👢',heart:'💛',earring:'💎',shoulder:'🛡️',weapon:'⚔️',secondary:'🗡️',totem:'🗿',set:'🧩'};
+const GEAR_GROUPS=[
+ ['武器與防具',['hat','cape','shoulder','weapon','secondary','body','pants','gloves','belt','shoes']],
+ ['飾品',['face','eye','earring','necklace','ring1','ring2','ring3','ring4','badge','medal','pocket','heart']],
+ ['圖騰、寵物與套裝',['totem','pet1','pet2','pet3','set']]
+];
+const gearLabelText=slot=>GEAR_SLOTS.find(([id])=>id===slot)?.[1]??'裝備';
+function gearIcon(slot){
  const icon=GEAR_ICONS[slot]||(slot.startsWith('ring')?'💍':'🐾');
- return '<span aria-hidden="true">'+icon+'</span> '+esc(GEAR_SLOTS.find(([id])=>id===slot)?.[1]||'裝備');
+ return `<span class="gear-icon" aria-hidden="true">${icon}</span>`;
+}
+function gearLabel(slot){
+ return gearIcon(slot)+' '+esc(gearLabelText(slot));
 }
 
-let gearEditIndex=null;
+let gearEditIndex=null, gearPreviewSlot='weapon';
 function gearEditor(){
  if(gearEditIndex===null)return '';
  const i=gearEditIndex,item=state.equipment[i],path='equipment.'+i;
  if(!item)return '';
- return `<dialog id="gearEditor" class="gear-dialog">
- <div class="flex space"><h2>${gearLabel(item.slot)}</h2><button class="btn" data-action="closeGear">完成</button></div>
+ return `<dialog id="gearEditor" class="gear-dialog" aria-labelledby="gearEditorTitle">
+ <div class="flex space"><h2 id="gearEditorTitle">${gearLabel(item.slot)}</h2><button class="btn" data-action="closeGear">完成</button></div>
+ ${checkbox('計入能力','equipment.'+i+'.enabled',item.enabled!==false)}
  ${item.slot==='body'?`<div class="fields">${select('衣服類型',path+'.bodyKind',item.bodyKind||'top',[['top','上衣＋褲裙'],['overall','套服（停用褲裙能力）']])}</div>`:''}
  <h3>裝備基礎數值</h3><div class="gear-stat-grid">${gearStatFields(path,item)}</div>
  ${[['potential','潛能'],['additional','附加潛能']].map(([section,label])=>`<details style="margin-top:12px"><summary>${label}</summary><div class="gear-stat-grid" style="margin-top:8px">${gearStatFields(path+'.'+section,item[section])}</div></details>`).join('')}
  </dialog>`;
 }
-function gearRows(){
- return GEAR_SLOTS.map(([id])=>state.equipment.findIndex(x=>x.slot===id)).map(i=>{
- const item=state.equipment[i],inactive=item.slot==='pants'&&suitEquipped();
- const total=gearTotals([{...item,enabled:true},item.potential,item.additional]);
- const details=GEAR_STATS.filter(key=>Math.abs(total[key])>=1e-9).map(key=>STAT_LABEL[key]+' '+fmt(total[key],2)).join(' · ');
-
- return '<tr><td><button class="gear-name" data-action="editGear" data-index="'+i+'">'+gearLabel(item.slot)+'</button></td><td>'+checkbox('', 'equipment.'+i+'.enabled',item.enabled!==false)+'</td><td class="gear-summary">'+esc(details||'尚未填寫')+(inactive?'<small>套服已啟用，褲裙暫停計算</small>':'')+'</td><td><button class="btn sm" data-action="editGear" data-index="'+i+'">編輯</button></td></tr>';
-
- }).join('');
+function gearStatus(item){
+ if(item.enabled===false)return '已停用';
+ if(item.slot==='pants'&&suitEquipped())return '套服使用中';
+ return '';
+}
+function gearStatDetails(label,stats,section=''){
+ const keys=GEAR_STATS.filter(key=>Math.abs(num(stats?.[key]))>=1e-9);
+ if(!keys.length)return '';
+ return `<section class="gear-details ${section}"><h4>${label}</h4><dl>${keys.map(key=>{
+  const value=num(stats[key]);
+  const number=GEAR_FLAT_STATS.includes(key)?fmt(value,2):pct(value,2);
+  return `<div><dt>${STAT_LABEL[key].replace(/ [%+]+$/,'')}</dt><dd>${value>0?'+':''}${number}</dd></div>`;
+ }).join('')}</dl></section>`;
+}
+function gearPreview(index){
+ const item=state.equipment[index];
+ if(!item)return '';
+ const status=gearStatus(item);
+ const parts=[gearStatDetails('裝備基礎數值',item),gearStatDetails('潛能',item.potential,'potential'),gearStatDetails('附加潛能',item.additional,'additional')].join('');
+ const name=String(item.name??'').trim();
+ return `<div class="gear-detail-header">${gearIcon(item.slot)}<div><h3>${esc(name||gearLabelText(item.slot))}</h3>
+ <p class="muted small">${name?esc(gearLabelText(item.slot)):''}${status?` <span class="pill">${status}</span>`:''}</p></div></div>
+ ${parts||'<p class="small muted">尚未填寫數值</p>'}
+ <div class="gear-detail-actions"><button type="button" class="btn sm" data-action="editGear" data-index="${index}">編輯數值</button></div>`;
 }
 
 function equipment(){
- return '<div class="panel"><h2>裝備配裝</h2><p class="desc">點選部位編輯裝備基礎數值、潛能與附加潛能。套裝加成填在「套裝 set」。</p><table class="gear-table"><thead><tr><th>部位</th><th>啟用</th><th>能力合計</th><th></th></tr></thead><tbody>'+gearRows()+'</tbody></table></div>'+gearEditor();
+ const slots=new Map(state.equipment.map((item,index)=>[item.slot,index]));
+ return `<div class="panel"><h2>裝備配裝</h2>
+ <p class="desc"><span class="gear-hover-help">滑過格子看數值，點選可保留預覽。</span><span class="gear-touch-help">點選格子查看裝備數值。</span> 套裝加成填在「套裝 set」。</p>
+ <div class="gear-layout"><div class="gear-board">
+ ${GEAR_GROUPS.map(([label,group])=>`<section class="gear-group"><h3>${label}</h3><div class="gear-slots">${group.map(slot=>{
+  const index=slots.get(slot);
+  const item=state.equipment[index],status=gearStatus(item);
+  const filled=String(item.name??'').trim()||[item,item.potential,item.additional].some(part=>GEAR_STATS.some(key=>num(part?.[key])!==0));
+  return `<button type="button" class="gear-slot ${status?'inactive':filled?'':'empty'}" data-action="previewGear" data-index="${index}" aria-pressed="${slot===gearPreviewSlot}">
+   ${gearIcon(slot)}<span>${esc(gearLabelText(slot))}</span>${status?`<small>${status}</small>`:''}</button>`;
+ }).join('')}</div></section>`).join('')}
+ </div><div id="gearPreview" class="gear-preview">${gearPreview(slots.get(gearPreviewSlot))}</div></div>
+ </div><dialog id="gearPreviewDialog" class="gear-dialog gear-preview-dialog" aria-label="裝備數值">
+ <div class="gear-dialog-close"><button type="button" class="btn sm" data-action="closeGearPreview" autofocus>關閉</button></div>
+ <div id="gearPreviewContent" class="gear-preview-content"></div></dialog>${gearEditor()}`;
+}
+const gearUsesDialog=()=>matchMedia('(max-width:760px), (hover:none)').matches;
+function showGearPreview(index){
+ const preview=document.getElementById('gearPreview');
+ if(preview)preview.innerHTML=gearPreview(index);
 }
 function linkPage(){let sel=state.links.filter(x=>x.id!=='none');let keys=Object.keys(LINK);return `<div class="notice info">楓星傳授資料採社群整理的 Lv.1～5 數值，可編輯傳授種類與等級；若遊戲顯示與此不同，請以遊戲為準。<b>最多裝備三個傳授</b>。</div><div class="panel"><h2>傳授技能插槽</h2><div class="linkcards">${state.links.map((ln,i)=>{let eff=LINK[ln.id]?.effects[(ln.level||1)-1]||{};return `<div class="linkcard"><div class="kicker">傳授插槽 ${i+1}</div><label class="field" style="margin-top:9px"><span>效果</span><select data-path="links.${i}.id">${keys.map(k=>`<option value="${k}" ${ln.id===k?'selected':''}>${esc(LINK[k].name)}</option>`).join('')}</select></label><label class="field" style="margin-top:9px"><span>傳授等級</span><select data-path="links.${i}.level">${[1,2,3,4,5].map(k=>`<option value="${k}" ${Number(ln.level)===k?'selected':''}>Lv.${k}</option>`).join('')}</select></label><div class="small muted" style="margin-top:8px">${Object.keys(eff).map(k=>`${STAT_LABEL[k]||k} +${eff[k]}%`).join(' / ')||'未裝備'}</div></div>`}).join('')}</div></div><div class="panel"><h2>數值來源與注意</h2><p class="desc">槍神、機甲、黑騎等的「物攻」暫視為攻擊力百分比；「最大暴擊傷害」只以一半折算為平均暴傷近似，並非官方公式。傳授加成僅做方向性比較，不應取代遊戲實測。</p></div>`}
 function effectTable(kind){const columns=STATS;return ` <div class="tablewrap"><table><thead><tr><th>排序</th><th>啟用</th><th>來源</th><th>生效時段</th>${columns.map(k=>`<th>${STAT_LABEL[k]}</th>`).join('')}<th>移除</th></tr></thead><tbody>${state[kind].map((x,i)=>`<tr data-sort-kind="${kind}" data-sort-index="${i}"><td class="order-cell"><button class="handle" draggable="true" data-drag-kind="${kind}" data-drag-index="${i}" title="拖曳排序">⠿</button><button class="order-btn" data-action="moveItem" data-kind="${kind}" data-index="${i}" data-dir="-1" ${i===0?'disabled':''} title="上移">↑</button><button class="order-btn" data-action="moveItem" data-kind="${kind}" data-index="${i}" data-dir="1" ${i===state[kind].length-1?'disabled':''} title="下移">↓</button></td><td><input class="rowcheck" type="checkbox" data-path="${kind}.${i}.enabled" ${x.enabled?'checked':''}></td><td><input class="tdinput name" type="text" data-kind="text" data-path="${kind}.${i}.name" value="${esc(x.name)}"></td><td><select class="mini-select" data-path="${kind}.${i}.phase"><option value="always" ${x.phase==='always'?'selected':''}>常駐</option><option value="burst" ${x.phase==='burst'?'selected':''}>僅爆發</option></select></td>${columns.map(k=>`<td><input class="tdinput" type="number" data-path="${kind}.${i}.${k}" value="${num(x[k])}"></td>`).join('')}<td><button class="btn sm danger" data-action="removeBuff" data-kind="${kind}" data-index="${i}">刪除</button></td></tr>`).join('')}</tbody></table></div>`}
@@ -1052,7 +1121,24 @@ function action(el){const cmd=el.dataset.action;if(!cmd)return;
   toast(`${name}已升到 Lv. ${nextLevel}`);
   return;
  }
- if(cmd==='editGear'){gearEditIndex=Number(el.dataset.index);render();return}
+ if(cmd==='previewGear'){
+  const index=Number(el.dataset.index);
+  gearPreviewSlot=state.equipment[index].slot;
+  document.querySelectorAll('.gear-slot').forEach(slot=>slot.setAttribute('aria-pressed',String(slot===el)));
+  showGearPreview(index);
+  if(gearUsesDialog()){
+   document.getElementById('gearPreviewContent').innerHTML=gearPreview(index);
+   document.getElementById('gearPreviewDialog').showModal();
+  }
+  return;
+ }
+ if(cmd==='closeGearPreview'){document.getElementById('gearPreviewDialog').close();return}
+ if(cmd==='editGear'){
+  gearEditIndex=Number(el.dataset.index);
+  gearPreviewSlot=state.equipment[gearEditIndex].slot;
+  render();
+  return;
+ }
  if(cmd==='closeGear'){gearEditIndex=null;render();return}
  if(cmd==='removeCustomBoss'){
   const index=Number(el.dataset.index);
@@ -1087,6 +1173,19 @@ function action(el){const cmd=el.dataset.action;if(!cmd)return;
  if(cmd==='csv')saveCsv();
 }
 document.addEventListener('click',e=>{let tabEl=e.target.closest('[data-tab]');if(tabEl){tab=tabEl.dataset.tab;render();window.scrollTo({top:0,behavior:'smooth'});return}let a=e.target.closest('[data-action]');if(a)action(a)});
+document.addEventListener('pointerover',e=>{
+ const slot=e.target.closest('.gear-slot');
+ if(slot&&e.pointerType==='mouse'&&!slot.contains(e.relatedTarget)&&!gearUsesDialog())showGearPreview(Number(slot.dataset.index));
+});
+document.addEventListener('pointerout',e=>{
+ if(e.pointerType==='mouse'&&e.target.closest('.gear-board')&&!e.relatedTarget?.closest?.('.gear-board')&&!gearUsesDialog()){
+  showGearPreview(state.equipment.findIndex(item=>item.slot===gearPreviewSlot));
+ }
+});
+document.addEventListener('focusin',e=>{
+ const slot=e.target.closest('.gear-slot');
+ if(slot&&!gearUsesDialog())showGearPreview(Number(slot.dataset.index));
+});
 function valueHandler(e){let el=e.target,path=el.dataset.path;if(!path)return;let value=el.type==='checkbox'?el.checked:el.dataset.kind==='text'||(el.tagName==='SELECT'&&!/^\d+(\.\d+)?$/.test(el.value))?el.value:el.type==='number'?num(el.value):/^\d+$/.test(el.value)&&/\.level$/.test(path)?Number(el.value):el.value;
  // Select values that contain numeric levels become numbers.
  if(el.tagName==='SELECT'&&/\.level$/.test(path))value=num(el.value);
