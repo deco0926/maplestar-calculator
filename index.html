@@ -672,7 +672,7 @@ function compute(levels=state.jobSkillLevels,opener=state.calc.opener==='burst'?
 const BOSS_KILL_TARGETS=[
  {name:'貝魯加墨特',hp:430_000_000},
  {name:'杜那斯',hp:700_000_000},
- {name:'希拉',hp:2_450_000_000,pdr:40,invulnerability:{period:80,duration:10}}
+ {name:'希拉',hp:2_450_000_000,pdr:40,invulnerability:{period:80,duration:15}}
 ];
 const BOSS_KILL_PDR=50, BOSS_KILL_LIMIT=3600;
 function parseCustomBoss(values){
@@ -727,7 +727,7 @@ function bossKillPage(){
    return `<tr><th scope="row">${plan.name}</th>${cells.join('')}</tr>`;
   });
   return `<div class="panel"><h2>${name}</h2><p class="desc">總 HP ${fmt(hp,0)} · 防禦率 ${pct(pdr,2)} · ${fmt(targets,0)} 個共用血條目標</p>
-  ${invulnerability?`<p class="desc">每 ${invulnerability.period} 秒無敵 ${invulnerability.duration} 秒，首次從開打後第 ${invulnerability.period} 秒開始。無敵時無法造成傷害或集花力。花力滿後可繼續普攻，等到能打完整段 20 秒才開爆發。</p>`:''}
+  ${invulnerability?`<p class="desc">反盾暫按每 ${invulnerability.period} 秒持續 ${invulnerability.duration} 秒估算，首次從開打後第 ${invulnerability.period} 秒開始。反盾期間暫停傷害與集花力。花力滿後，等有完整 20 秒輸出時間才開爆發。其他機制造成的停手時間尚未納入。</p>`:''}
   <div class="tablewrap"><table><thead><tr><th scope="col">打法</th>${columns.map(({label})=>`<th scope="col">${label}</th>`).join('')}</tr></thead>
   <tbody>${rows.join('')}</tbody></table></div>
   ${index===undefined?'':`<details><summary>編輯自訂 Boss</summary>${customBossForm(index,boss)}</details>`}</div>`;
