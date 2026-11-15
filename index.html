@@ -1277,6 +1277,7 @@ function valueHandler(e){let el=e.target,path=el.dataset.path;if(!path)return;le
   if(occupant>=0)state.equipment[occupant].slot=old;
  }
  setPath(path,value);
+ if(path==='calc.rangeStat'){render();return}
  if(/^equipment\.\d+\.slot$/.test(path))normalizeEquipment(state);
  if(/^links\.\d+\.id$/.test(path)&&value!=='none'){
    const idx=Number(path.split('.')[1]);
