@@ -349,13 +349,14 @@ function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillL
  const ents=[...equipmentEffects(),...linkEntries(),...state.buffs.filter(isActive),...jobEffects,...modeledJobEffects(burst,levelFor,openingActive)];
  const {total:t,ies,finals}=sumEffects(ents);
  const warriorRate=jobSkillToggle('黎明勇士',burst)?warriorPercent(levelFor('黎明勇士'))/100:0;
- const warriorDex=(num(b.pureDex)||num(b.dex))*warriorRate;
+ const warriorDex=(b.projectedPureDex??(num(b.pureDex)||num(b.dex)))*warriorRate;
  const warriorStr=(num(b.pureStr)||num(b.str))*warriorRate;
  const dex=(num(b.dex)+t.dex+warriorDex)*(1+(num(b.dexPct)+t.dexPct)/100);
  const str=(num(b.str)+t.str+warriorStr)*(1+(num(b.strPct)+t.strPct)/100);
  const attack=(num(b.attack)+t.attack)*(1+(num(b.atkPct)+t.atkPct)/100);
  const baseHp=num(b.hp);
- const hp=baseHp>0?Math.max(0,Math.floor((baseHp+t.hp)*(1+(num(b.hpPct)+t.hpPct)/100)+1e-9)):null;
+ const hpWithoutPct=baseHp+t.hp, hpMultiplier=1+(num(b.hpPct)+t.hpPct)/100;
+ const hp=baseHp>0?Math.max(0,Math.floor(hpWithoutPct*hpMultiplier+1e-9)):null;
  const damage=num(b.damage)+t.damage;
  const boss=num(b.boss)+ents.reduce((total,effect)=>effect.enabled===false?total:total+num(effect.bossDamageBonus),t.boss);
  let iedRemain=(1-clamp(num(b.ied),0,100)/100);
@@ -384,7 +385,7 @@ function buildContext(burst=false,critMode='avg',b=state.base,levelFor=jobSkillL
  const panelAverageFactor=panelRangeMax>0?(panelRangeMax+panelRangeMin)/(2*panelRangeMax):0;
  const averageRaw=(rawRange+rawMin)/2;
  const damageScale=averageRaw*finalFactor*defense*(1+num(state.boss.taken)/100)*num(b.levelMultiplier);
- return {dex,str,attack,hp,damage,boss,ied,panelIed,defense,finalFactor,critRate,minCrit,maxCrit,critBonus,critFactor,rawRange,rawMin,
+ return {dex,str,attack,hp,hpWithoutPct,hpMultiplier,damage,boss,ied,panelIed,defense,finalFactor,critRate,minCrit,maxCrit,critBonus,critFactor,rawRange,rawMin,
   predictedPanel:panelRangeMax,predictedMin:panelRangeMin,panelRangeMax,panelRangeMin,panelAverageFactor,
   weaponConstant,weaponMastery,damageScale,per100:Math.max(0,damageScale*Math.max(0,1+(damage+boss)/100)*critFactor),iedRemain};
 }
@@ -863,16 +864,26 @@ function formatPanelStat(key,value){
  return pct(key==='panelIed'?Math.floor(Number(value.toFixed(10))):value,0);
 }
 const RANGE_STATS=[['dex','DEX'],['dexPct','DEX %'],['attack','物攻'],['atkPct','物攻 %']];
+const RANGE_HP_STATS=[['hp','HP'],['hpPct','HP %']];
+const RANGE_HP_PER_DEX=78;
 function rangeComparison(){
+ const stats=[...RANGE_STATS,...RANGE_HP_STATS];
+ const hpMode=RANGE_HP_STATS.some(([key])=>key===state.calc.rangeStat);
  return `<div class="panel"><h2>表攻提升比較</h2><p class="desc">以目前常態配裝的最大表攻比較。百分比欄位以百分點輸入，例如 DEX % 填 1 代表增加 1 個百分點。</p>
- <div class="two">${select('增加的屬性','calc.rangeStat',state.calc.rangeStat??'dexPct',RANGE_STATS)}${input('增加量','calc.rangeAmount',state.calc.rangeAmount??1)}</div>
+ <div class="two">${select('增加的屬性','calc.rangeStat',state.calc.rangeStat??'dexPct',stats)}${input('增加量','calc.rangeAmount',state.calc.rangeAmount??1)}</div>
+ ${hpMode?`<div class="sep"></div>
+ ${input('目標常態 HP','calc.rangeHpTarget',state.calc.rangeHpTarget??30000,'比較加成前後，要達到同一個 HP 目標所需的配點','1')}
+ <p class="small muted">每 1 點基礎 DEX 可換 ${RANGE_HP_PER_DEX} 基礎 HP，再套用最大 HP%。表攻和傷害比較以兩邊都達到目標 HP 時的配點為準。</p>
+ <div class="statline"><span>回配 DEX 前的常態 HP</span><b id="range-hp-gain">—</b></div>
+ <div class="statline"><span>達標所需基礎 DEX</span><b id="range-hp-cost">—</b></div>
+ <div class="statline"><span>可省下的基礎 DEX</span><b id="range-hp-saved">—</b></div>`:''}
  <div class="statline"><span>最大表攻提升</span><b id="range-gain">—</b></div>
  <div class="statline"><span>打王傷害提升</span><b id="range-damage-gain">—</b></div>
  <p class="small muted">C 四連擊＋花尖，單體 Boss 防禦率 50%，比較 180 秒總傷害。開場沿用傷害總覽設定。</p>
  <div class="two">${RANGE_STATS.map(([key,label])=>`<div class="statline"><span>等效 ${label}</span><b id="range-equivalent-${key}">—</b></div>`).join('')}</div></div>`;
 }
-function rangeDamageGain(raisedBase){
- const fight=prepareFight(jobSkillLevel,50);
+function rangeDamageGain(raisedBase,baselineBase=state.base){
+ const fight=prepareFight(jobSkillLevel,50,baselineBase);
  const plan=fight.plans.find(plan=>plan.id==='ab');
  if(!plan.available)return 'C 循環未解鎖';
  const opener=state.calc.opener==='burst'?'burst':'charge';
@@ -887,20 +898,40 @@ function rangeDamageGain(raisedBase){
 function updateRangeComparison(normal){
  const gainCell=document.getElementById('range-gain');
  if(!gainCell)return;
- const selected=RANGE_STATS.find(([key])=>key===state.calc.rangeStat)?.[0]??'dexPct';
+ const selected=[...RANGE_STATS,...RANGE_HP_STATS].find(([key])=>key===state.calc.rangeStat)?.[0]??'dexPct';
  const amount=Math.max(0,num(state.calc.rangeAmount??1));
  const base=state.base;
  const comparisonBase={...base,pureDex:num(base.pureDex)||num(base.dex),pureStr:num(base.pureStr)||num(base.str)};
- const baseWith=(key,bonus)=>({...comparisonBase,[key]:num(base[key])+bonus});
- const maxWith=(key,bonus)=>buildContext(false,'avg',baseWith(key,bonus)).panelRangeMax;
- const before=normal.panelRangeMax;
- const after=maxWith(selected,amount);
+ const baseWith=(key,bonus,values=comparisonBase)=>({...values,[key]:num(values[key])+bonus});
+ let baselineBase=comparisonBase, raisedBase=baseWith(selected,amount), available=true;
+ if(RANGE_HP_STATS.some(([key])=>key===selected)){
+  const raised=buildContext(false,'avg',raisedBase);
+  const target=Math.max(1,Math.ceil(num(state.calc.rangeHpTarget??30000)));
+  const cost=context=>context.hp!==null&&context.hpMultiplier>0
+   ?Math.max(0,Math.ceil(((target-1e-9)/context.hpMultiplier-context.hpWithoutPct)/RANGE_HP_PER_DEX)):null;
+  const beforeCost=cost(normal), afterCost=cost(raised);
+  const hpGain=document.getElementById('range-hp-gain');
+  const hpCost=document.getElementById('range-hp-cost');
+  const hpSaved=document.getElementById('range-hp-saved');
+  hpGain.textContent=normal.hp===null?'請先填寫基礎 HP':`${fmt(normal.hp,0)} → ${fmt(raised.hp,0)}`;
+  hpCost.textContent=beforeCost===null||afterCost===null?'—':`${fmt(beforeCost,0)} → ${fmt(afterCost,0)} 點`;
+  available=beforeCost!==null&&afterCost!==null&&Math.max(beforeCost,afterCost)<=Math.min(num(base.dex),comparisonBase.pureDex);
+  hpSaved.textContent=available?`${fmt(beforeCost-afterCost,0)} 點`:beforeCost===null||afterCost===null?'—':'基礎 DEX 不足以讓兩邊都達標';
+  const allocate=(values,points)=>({...values,dex:num(values.dex)-points,
+   projectedPureDex:comparisonBase.pureDex-points,hp:num(values.hp)+points*RANGE_HP_PER_DEX});
+  if(available){
+   baselineBase=allocate(baselineBase,beforeCost);
+   raisedBase=allocate(raisedBase,afterCost);
+  }
+ }
+ const before=baselineBase===comparisonBase?normal.panelRangeMax:buildContext(false,'avg',baselineBase).panelRangeMax;
+ const after=available?buildContext(false,'avg',raisedBase).panelRangeMax:before;
  const gain=after-before;
- gainCell.textContent=`+${fmt(Math.round(after)-Math.round(before),0)}（${fmt(before,0)} → ${fmt(after,0)}）`;
- document.getElementById('range-damage-gain').textContent=rangeDamageGain(baseWith(selected,amount));
+ gainCell.textContent=available?`+${fmt(Math.round(after)-Math.round(before),0)}（${fmt(before,0)} → ${fmt(after,0)}）`:'—';
+ document.getElementById('range-damage-gain').textContent=available?rangeDamageGain(raisedBase,baselineBase):'—';
  for(const [key] of RANGE_STATS){
-  const perUnit=maxWith(key,1)-before;
-  const equivalent=key===selected?amount:before>0&&perUnit>0?gain/perUnit:null;
+  const perUnit=buildContext(false,'avg',baseWith(key,1,baselineBase)).panelRangeMax-before;
+  const equivalent=!available?null:key===selected?amount:before>0&&perUnit>0?gain/perUnit:null;
   document.getElementById('range-equivalent-'+key).textContent=equivalent===null?'—':`${fmt(equivalent,4)}${key.endsWith('Pct')?'%':''}`;
  }
 }
