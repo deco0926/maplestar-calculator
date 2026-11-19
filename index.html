@@ -457,8 +457,18 @@ function burstDetails(s,levelFor){
   shot:levelFor('狙擊')===20?(1695+secretSnipeBonus(levelFor('火繩槍劍秘傳')))*4:0
  };
 }
-function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,burstLimit=0,burstWithoutOpening,dice,bossHp=0,invulnerability}){
+function simulateFight(c,seconds,normal,burst,skills,levelFor,options){
+ const {opener,targets,burstLimit=0,burstWithoutOpening,dice,bossHp=0,invulnerability,hpTriggerDamage=0}=options;
  if(!c.available)return null;
+ if(bossHp>0&&invulnerability?.hpThreshold>0){
+  // 先找出實際扣到門檻的時間，再從該次命中後開始無敵循環。
+  const initial=simulateFight(c,seconds,normal,burst,skills,levelFor,{...options,invulnerability:undefined,hpTriggerDamage:bossHp*(1-invulnerability.hpThreshold)});
+  if(initial?.hpTriggerTime==null)return initial;
+  const phased={...invulnerability,hpThreshold:undefined,start:initial.hpTriggerTime+1e-7,triggeredByHp:true};
+  const result=simulateFight(c,seconds,normal,burst,skills,levelFor,{...options,invulnerability:phased});
+  if(result)result.invulnerabilityStart=initial.hpTriggerTime;
+  return result;
+ }
  const openingLevel=levelFor('花力開放');
  const canBurst=openingLevel>0;
  if(burstLimit&&(!canBurst||!Number.isFinite(c.count)))return null;
@@ -469,7 +479,13 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  const nextVulnerable=(time,window=0)=>{
   if(!invulnerability)return time;
   const {period,duration}=invulnerability;
-  const start=Math.max(period,Math.floor(time/period)*period);
+  const first=invulnerability.start??period;
+  if(time<first){
+   // 血量門檻尚未觸發時，保持原本打法，不提前預知無敵時間。
+   if(invulnerability.triggeredByHp)return time;
+   return window>0&&time+window>first+1e-9?first+duration:time;
+  }
+  const start=first+Math.floor((time-first)/period)*period;
   if(time>=start&&time<start+duration)return start+duration;
   const next=time<start?start:start+period;
   return window>0&&time+window>next+1e-9?next+duration:time;
@@ -484,7 +500,7 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  let time=0, nextNormalFlower=0, nextOpening=0;
  const castNormalFlower=()=>{
   if(!skills.flowerPerShot||time>=seconds||time+1e-9<nextNormalFlower)return;
-  if(nextVulnerable(time+NORMAL_FLOWER_CAST_TIME)!==time+NORMAL_FLOWER_CAST_TIME)return;
+  if(!(invulnerability?.triggeredByHp&&time<invulnerability.start)&&nextVulnerable(time+NORMAL_FLOWER_CAST_TIME)!==time+NORMAL_FLOWER_CAST_TIME)return;
   time+=NORMAL_FLOWER_CAST_TIME;
   addFlower(time,'normalFlower',false);
   nextNormalFlower=time+NORMAL_FLOWER_COOLDOWN;
@@ -609,12 +625,13 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  }));
  const multiplicativeMark=1+num(state.skill.mark)/100;
  for(const source of ['charge','ult','normalFlower','flower','dot','snipe','proc'])totals[source]={count:0,multiplier:0,damage:0,primaryDamage:0};
- let defeatTime=null, damageToBoss=0;
+ let defeatTime=null, damageToBoss=0, hpTriggerTime=null;
  const record=(time,source,multiplier,primaryDamage,otherDamage=0,count=1)=>{
   const row=totals[source];
   row.count+=count;row.multiplier+=multiplier;row.primaryDamage+=primaryDamage;row.damage+=primaryDamage+otherDamage;
   if(bossHp>0&&defeatTime===null){
    damageToBoss+=primaryDamage+otherDamage;
+   if(hpTriggerDamage>0&&hpTriggerTime===null&&damageToBoss+1e-7>=hpTriggerDamage)hpTriggerTime=time;
    if(damageToBoss>=bossHp)defeatTime=time;
   }
  };
@@ -649,7 +666,7 @@ function simulateFight(c,seconds,normal,burst,skills,levelFor,{opener,targets,bu
  const dealt=Object.values(totals).reduce((sum,row)=>sum+row.damage,0);
  const primaryDamage=Object.values(totals).reduce((sum,row)=>sum+row.primaryDamage,0);
  const multiplier=Object.values(totals).reduce((sum,row)=>sum+row.multiplier,0);
- return {totals,dealt,primaryDamage,multiplier,charges,bursts,openingUses,procs,firstCharge,firstBurst,duration,dps:dealt/duration,defeatTime};
+ return {totals,dealt,primaryDamage,multiplier,charges,bursts,openingUses,procs,firstCharge,firstBurst,duration,dps:dealt/duration,defeatTime,hpTriggerTime};
 }
 function prepareFight(levelFor,pdr,base=state.base){
  const dice=luckyDiceModel(levelFor);
@@ -674,9 +691,9 @@ const BOSS_KILL_TARGETS=[
  {name:'貝魯加墨特',hp:430_000_000},
  {name:'杜那斯',hp:700_000_000},
  {name:'希拉',hp:2_450_000_000,pdr:40,invulnerability:{period:80,duration:15}},
- {name:'皮卡啾',hp:2_100_000_000,pdr:70,level:180,damageReduction:50}
+ {name:'皮卡啾',hp:2_100_000_000,pdr:70,level:180,damageReduction:50,invulnerability:{period:40,duration:20,hpThreshold:.9}}
 ];
-const BOSS_KILL_PDR=50, BOSS_KILL_LIMIT=3600;
+const BOSS_KILL_PDR=50, BOSS_KILL_LIMIT=7200;
 // 依使用者提供的等差表；超過 30 等沒有資料，暫不推算。
 const LEVEL_DAMAGE_REDUCTIONS=[0,0,0,2.5,7.5,10,10,12.5,15,15,17.5,20,22.5,22.5,25,27.5,30,30,32.5,35,35,37.5,40,40,42.5,45,45,47.5,47.5,50,50];
 function bossDamageModifiers(boss,base=state.base){
@@ -742,8 +759,8 @@ function bossKillPage(){
     if(!plan.available)return '<td>打法未解鎖</td>';
     if(modifiers.unknown)return '<td>等差超過 30，待補倍率</td>';
     const time=times[index];
-    if(time===null)return '<td>60 分內未擊殺</td>';
-    const seconds=Math.ceil(time);
+    if(time===null)return `<td>${BOSS_KILL_LIMIT/60} 分內未擊殺</td>`;
+    const seconds=Math.ceil(time-1e-6);
     return `<td><b class="${time===fastest?'good':''}">${Math.floor(seconds/60)} 分 ${seconds%60} 秒</b></td>`;
    });
    return `<tr><th scope="row">${plan.name}</th>${cells.join('')}</tr>`;
@@ -751,7 +768,7 @@ function bossKillPage(){
   return `<div class="panel"><h2>${name}</h2><p class="desc">總 HP ${fmt(hp,0)} · 防禦率 ${pct(pdr,2)} · ${fmt(targets,0)} 個共用血條目標${modifiers.bossLevel?` · Lv. ${modifiers.bossLevel}`:''}</p>
   ${modifiers.bossLevel?`<p class="desc">${modifiers.unknown?'角色低於 Boss 超過 30 等，提供的等差表尚無對應資料。':!modifiers.hasLevels?'請先在角色能力填入等級，以計入等差增減傷。':`等差倍率 ×${fmt(modifiers.levelFactor,3)}（${modifiers.gap>0?`低 ${modifiers.gap} 等`:modifiers.gap<0?`高 ${-modifiers.gap} 等`:'同等'}）。`}</p>`:''}
   ${modifiers.reductionFactor!==1?`<p class="desc">Boss 傷害減半：傷害 ×${fmt(modifiers.reductionFactor,3)}，與等差倍率相乘${modifiers.unknown?'':`；合計傷害倍率 ×${fmt(modifiers.factor,4)}`}。</p>`:''}
-  ${invulnerability?`<p class="desc">反盾暫按每 ${invulnerability.period} 秒持續 ${invulnerability.duration} 秒估算，首次從開打後第 ${invulnerability.period} 秒開始。反盾期間暫停傷害與集花力。花力滿後，等有完整 20 秒輸出時間才開爆發。其他機制造成的停手時間尚未納入。</p>`:''}
+  ${invulnerability?`<p class="desc">${invulnerability.hpThreshold?`血量首次降到 ${pct(invulnerability.hpThreshold*100,0)} 時開始無敵 ${invulnerability.duration} 秒，接著可攻擊 ${invulnerability.period-invulnerability.duration} 秒，持續交替循環。門檻前照常輸出，跨過門檻的當次爆發可能被中斷。`:`反盾暫按每 ${invulnerability.period} 秒持續 ${invulnerability.duration} 秒估算，首次從開打後第 ${invulnerability.period} 秒開始。`}無敵期間暫停傷害與集花力，技能冷卻照常經過。花力滿後，等有完整 20 秒輸出時間才開爆發。其他機制造成的停手時間尚未納入。</p>`:''}
   <div class="tablewrap"><table><thead><tr><th scope="col">打法</th>${columns.map(({label})=>`<th scope="col">${label}</th>`).join('')}</tr></thead>
   <tbody>${rows.join('')}</tbody></table></div>
   ${index===undefined?'':`<details><summary>編輯自訂 Boss</summary>${customBossForm(index,boss)}</details>`}</div>`;
