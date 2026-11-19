@@ -66,7 +66,7 @@ const sampleGear=[
 {name:'俠客圖斯套裝 5件效果',dex:20,str:20},
 {name:'俠客圖斯套裝 6件效果',attack:30,boss:30}];
 const INITIAL={
- base:{dex:620,str:80,attack:100,dexPct:0,strPct:0,atkPct:0,damage:20,boss:40,critRate:50,critDamage:0,critMax:0,ied:65,finalDamage:0,weaponConstant:1.3,weaponMastery:60,levelMultiplier:1},
+ base:{level:0,dex:620,str:80,attack:100,dexPct:0,strPct:0,atkPct:0,damage:20,boss:40,critRate:50,critDamage:0,critMax:0,ied:65,finalDamage:0,weaponConstant:1.3,weaponMastery:60,levelMultiplier:1},
  equipment:[],links:[{id:'none',level:1},{id:'none',level:1},{id:'none',level:1}],
  buffs:[{name:'花力全開能力增益（請自行填）',phase:'burst',enabled:false,attack:0,atkPct:0,dex:0,str:0,damage:0,boss:0,critRate:0,critDamage:0,ied:0,finalDamage:0}],
  boss:{pdr:100,taken:0,partyIed:0},
@@ -673,26 +673,45 @@ function compute(levels=state.jobSkillLevels,opener=state.calc.opener==='burst'?
 const BOSS_KILL_TARGETS=[
  {name:'貝魯加墨特',hp:430_000_000},
  {name:'杜那斯',hp:700_000_000},
- {name:'希拉',hp:2_450_000_000,pdr:40,invulnerability:{period:80,duration:15}}
+ {name:'希拉',hp:2_450_000_000,pdr:40,invulnerability:{period:80,duration:15}},
+ {name:'皮卡啾',hp:2_100_000_000,pdr:70,level:180,damageReduction:50}
 ];
 const BOSS_KILL_PDR=50, BOSS_KILL_LIMIT=3600;
+// 依使用者提供的等差表；超過 30 等沒有資料，暫不推算。
+const LEVEL_DAMAGE_REDUCTIONS=[0,0,0,2.5,7.5,10,10,12.5,15,15,17.5,20,22.5,22.5,25,27.5,30,30,32.5,35,35,37.5,40,40,42.5,45,45,47.5,47.5,50,50];
+function bossDamageModifiers(boss,base=state.base){
+ const characterLevel=Math.max(0,Math.trunc(num(base.level))), bossLevel=Math.max(0,Math.trunc(num(boss.level)));
+ const hasLevels=characterLevel>0&&bossLevel>0, gap=hasLevels?bossLevel-characterLevel:0;
+ const unknown=hasLevels&&gap>=LEVEL_DAMAGE_REDUCTIONS.length;
+ const levelFactor=unknown?null:!hasLevels?1:gap<=0?1+Math.min(-gap,5)/100:1-LEVEL_DAMAGE_REDUCTIONS[gap]/100;
+ const reductionFactor=1-clamp(num(boss.damageReduction),0,100)/100;
+ return {characterLevel,bossLevel,hasLevels,gap,unknown,levelFactor,reductionFactor,factor:unknown?null:levelFactor*reductionFactor};
+}
 function parseCustomBoss(values){
  const {hp,pdr,targets}=values??{};
  if(!Number.isSafeInteger(hp)||hp<1||!Number.isSafeInteger(targets)||targets<1||!Number.isFinite(pdr)||pdr<0||pdr>999)return null;
- return {hp,pdr,targets};
+ const level=values.level;
+ if(level!=null&&level!==''&&level!==0&&(!Number.isSafeInteger(level)||level<1))return null;
+ return {hp,pdr,targets,...(level>0?{level}:{})};
 }
-function customBossForm(index,{hp='',pdr=BOSS_KILL_PDR,targets=1}={}){
+function customBossForm(index,{hp='',pdr=BOSS_KILL_PDR,targets=1,level=''}={}){
  const adding=index===null;
  return `<form data-custom-boss="${adding?'new':index}">
  <div class="fields">
  <label class="field"><span>防禦率 %</span><input name="pdr" type="number" min="0" max="999" step="any" value="${pdr}" required></label>
  <label class="field"><span>共用血條的目標數</span><input name="targets" type="number" min="1" step="1" value="${targets}" required></label>
  <label class="field"><span>共用血條總 HP</span><input name="hp" type="number" min="1" step="1" value="${hp}" placeholder="例如 2400000000" required></label>
+ <label class="field"><span>Boss 等級（選填）</span><input name="level" type="number" min="1" step="1" value="${level}" placeholder="留空不計等差"></label>
  </div><div class="actionline"><button type="submit" class="btn primary">${adding?'新增 Boss':'儲存並重算'}</button>
  ${adding?'':`<button type="button" class="btn sm danger" data-action="removeCustomBoss" data-index="${index}">移除</button>`}</div></form>`;
 }
-function bossKillTime(plan,fight,{hp,targets,invulnerability},opener){
- const {normal,br,burstWithoutOpening,skills,dice}=fight;
+function bossKillTime(plan,fight,boss,opener){
+ const {hp,targets,invulnerability}=boss;
+ const {factor}=bossDamageModifiers(boss);
+ if(factor===null||factor<=0)return null;
+ const scale=context=>({...context,damageScale:context.damageScale*factor});
+ const normal=scale(fight.normal),br=scale(fight.br),burstWithoutOpening=scale(fight.burstWithoutOpening);
+ const {skills,dice}=fight;
  const options={opener,targets,burstWithoutOpening,dice,bossHp:hp,invulnerability};
  for(let seconds=FIGHT_SECONDS;;seconds=Math.min(seconds*2,BOSS_KILL_LIMIT)){
   const run=simulateFight(plan,seconds,normal,br,skills,jobSkillLevel,options);
@@ -704,13 +723,14 @@ function bossKillPage(){
  const presets=BOSS_KILL_TARGETS.map(boss=>({pdr:BOSS_KILL_PDR,targets:1,...boss}));
  const customs=state.calc.customBosses.map((boss,index)=>({...boss,name:`自訂 Boss ${index+1}`,index}));
  const fights=new Map();
- return `<p class="desc">單人模擬，沿用目前的裝備、技能、Buff 和骰子設定。各 Boss 的特殊機制列在擊殺時間表上方。</p>
+ return `<p class="desc">單人模擬，沿用目前的裝備、技能、Buff 和骰子設定。各 Boss 的特殊機制列在擊殺時間表上方。角色等級：${num(state.base.level)>0?`Lv. ${Math.trunc(num(state.base.level))}`:'未填，尚未套用等差倍率'}（可在角色能力填寫）。</p>
  ${canBurst?'':'<p class="small muted">花力開放尚未習得，兩種開場都會持續集花力。</p>'}
  <div class="panel"><h2>新增自訂 Boss</h2>
  <p class="desc">填入整條血量。技能同時命中多個部位時，合計扣除共用 HP。</p>
  ${customBossForm(null)}</div>
  ${[...customs,...presets].map(boss=>{
   const {name,hp,pdr,targets,index,invulnerability}=boss;
+  const modifiers=bossDamageModifiers(boss);
   if(!fights.has(pdr))fights.set(pdr,prepareFight(jobSkillLevel,pdr));
   const fight=fights.get(pdr);
   const columns=OPENERS.map(([opener,label])=>{
@@ -720,6 +740,7 @@ function bossKillPage(){
   const rows=fight.plans.map((plan,index)=>{
    const cells=columns.map(({times,fastest})=>{
     if(!plan.available)return '<td>打法未解鎖</td>';
+    if(modifiers.unknown)return '<td>等差超過 30，待補倍率</td>';
     const time=times[index];
     if(time===null)return '<td>60 分內未擊殺</td>';
     const seconds=Math.ceil(time);
@@ -727,7 +748,9 @@ function bossKillPage(){
    });
    return `<tr><th scope="row">${plan.name}</th>${cells.join('')}</tr>`;
   });
-  return `<div class="panel"><h2>${name}</h2><p class="desc">總 HP ${fmt(hp,0)} · 防禦率 ${pct(pdr,2)} · ${fmt(targets,0)} 個共用血條目標</p>
+  return `<div class="panel"><h2>${name}</h2><p class="desc">總 HP ${fmt(hp,0)} · 防禦率 ${pct(pdr,2)} · ${fmt(targets,0)} 個共用血條目標${modifiers.bossLevel?` · Lv. ${modifiers.bossLevel}`:''}</p>
+  ${modifiers.bossLevel?`<p class="desc">${modifiers.unknown?'角色低於 Boss 超過 30 等，提供的等差表尚無對應資料。':!modifiers.hasLevels?'請先在角色能力填入等級，以計入等差增減傷。':`等差倍率 ×${fmt(modifiers.levelFactor,3)}（${modifiers.gap>0?`低 ${modifiers.gap} 等`:modifiers.gap<0?`高 ${-modifiers.gap} 等`:'同等'}）。`}</p>`:''}
+  ${modifiers.reductionFactor!==1?`<p class="desc">Boss 傷害減半：傷害 ×${fmt(modifiers.reductionFactor,3)}，與等差倍率相乘${modifiers.unknown?'':`；合計傷害倍率 ×${fmt(modifiers.factor,4)}`}。</p>`:''}
   ${invulnerability?`<p class="desc">反盾暫按每 ${invulnerability.period} 秒持續 ${invulnerability.duration} 秒估算，首次從開打後第 ${invulnerability.period} 秒開始。反盾期間暫停傷害與集花力。花力滿後，等有完整 20 秒輸出時間才開爆發。其他機制造成的停手時間尚未納入。</p>`:''}
   <div class="tablewrap"><table><thead><tr><th scope="col">打法</th>${columns.map(({label})=>`<th scope="col">${label}</th>`).join('')}</tr></thead>
   <tbody>${rows.join('')}</tbody></table></div>
@@ -959,7 +982,7 @@ function character(){
  ${PANEL_STATS.map(([key,label])=>`<tr><td>${label}</td><td id="live-normal-${key}">${formatPanelStat(key,r.normal[key])}</td><td id="live-br-${key}">${formatPanelStat(key,r.br[key])}</td></tr>`).join('')}
  </tbody></table></div></div>
  ${potentialSummary()}
- <div class="panel"><h2>角色基礎能力</h2><p class="desc">自動熟練度採推定基礎 15% 加上專家或精通的技能熟練度。精通等級效果待確認時，沿用手動總熟練度。</p><div class="fields">${select('熟練度來源','base.masteryMode',state.base.masteryMode??'auto',[['auto','依技能自動計算'],['manual','使用手動總熟練度']])}${input('基礎最大 HP','base.hp',b.hp??'','填入未計入裝備、技能與 Buff 的最大 HP','1')}${input('額外最大 HP %','base.hpPct',b.hpPct??0,'僅填未列在其他欄位的加成')}${parts.map(([name,path])=>input(name,path,getPath(path))).join('')}</div><div class="sep"></div><button class="btn" data-action="resetBase">改成空白基礎值</button></div>
+ <div class="panel"><h2>角色基礎能力</h2><p class="desc">自動熟練度採推定基礎 15% 加上專家或精通的技能熟練度。精通等級效果待確認時，沿用手動總熟練度。角色等級用於打王時間：低於 Boss 時依等差表減傷；高於 Boss 時每等增傷 1%，最多 5%。沒有 Boss 等級時不計等差。</p><div class="fields"><label class="field"><span>角色等級</span><input type="number" min="1" step="1" data-path="base.level" value="${esc(b.level||'')}" placeholder="填入目前等級"></label>${select('熟練度來源','base.masteryMode',state.base.masteryMode??'auto',[['auto','依技能自動計算'],['manual','使用手動總熟練度']])}${input('基礎最大 HP','base.hp',b.hp??'','填入未計入裝備、技能與 Buff 的最大 HP','1')}${input('額外最大 HP %','base.hpPct',b.hpPct??0,'僅填未列在其他欄位的加成')}${parts.map(([name,path])=>input(name,path,getPath(path))).join('')}</div><div class="sep"></div><button class="btn" data-action="resetBase">改成空白基礎值</button></div>
  <div class="panel"><h2>黎明勇士的純配點</h2><p class="desc">預設取角色基礎能力的 DEX、STR。若基礎欄包含其他固定加成，在這裡填入遊戲面板括號左側的純配點。</p><div class="two">${input('純配點 DEX','base.pureDex',b.pureDex||'')}${input('純配點 STR','base.pureStr',b.pureStr||'')}</div></div>
  ${rangeComparison()}
  <div class="panel"><h2>面板數值填寫原則</h2><p class="desc">將固定能力、裝備、傳授與常駐 Buff 分開輸入，頁面會即時顯示預測範圍。若與遊戲面板不一致，請自行調整武器係數、熟練度，並檢查是否漏填或重複加算。此工具不會自動拿實際表攻進行校正。</p></div>`;
@@ -1276,6 +1299,7 @@ function valueHandler(e){let el=e.target,path=el.dataset.path;if(!path)return;le
   const occupant=state.equipment.findIndex((x,i)=>i!==index&&x.slot===value);
   if(occupant>=0)state.equipment[occupant].slot=old;
  }
+ if(path==='base.level')value=Math.max(0,Math.trunc(num(value)));
  setPath(path,value);
  if(path==='calc.rangeStat'){render();return}
  if(/^equipment\.\d+\.slot$/.test(path))normalizeEquipment(state);
@@ -1290,8 +1314,8 @@ document.addEventListener('submit',e=>{
  const form=e.target, key=form.dataset.customBoss;
  if(key===undefined)return;
  e.preventDefault();
- const boss=parseCustomBoss(Object.fromEntries(['hp','pdr','targets'].map(name=>[name,form.elements.namedItem(name).valueAsNumber])));
- if(!boss){toast('請輸入有效的防禦率、正整數目標數和總 HP');return}
+ const boss=parseCustomBoss(Object.fromEntries(['hp','pdr','targets','level'].map(name=>{const field=form.elements.namedItem(name);return [name,name==='level'&&!field.value?undefined:field.valueAsNumber]})));
+ if(!boss){toast('請輸入有效的防禦率、正整數目標數和總 HP；等級可留空或填正整數');return}
  if(key==='new')state.calc.customBosses.push(boss);
  else{
   const index=Number(key);
