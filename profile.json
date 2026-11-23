@@ -1,9 +1,10 @@
 {
   "version": 5,
-  "exportedAt": "2026-11-12T23:58:21.984Z",
+  "exportedAt": "2026-11-23T11:58:03.572Z",
   "data": {
     "base": {
-      "dex": 732,
+      "level": 178,
+      "dex": 812,
       "str": 4,
       "attack": 0,
       "dexPct": 0,
@@ -36,8 +37,8 @@
           "atkPct": 12
         },
         "name": "柯拉凡雷恩赤龍鐵砲 (+5)",
-        "attack": 121,
-        "dex": 6
+        "attack": 136,
+        "dex": 9
       },
       {
         "slot": "body",
@@ -45,14 +46,17 @@
         "mergedStats": true,
         "potential": {
           "dexPct": 6,
-          "str": 24
+          "str": 0
         },
-        "additional": {},
+        "additional": {
+          "dexPct": 2,
+          "dex": 14
+        },
         "name": "柯拉凡雷恩戰鬥服 (+7)",
         "bodyKind": "overall",
         "hp": 50,
         "str": 8,
-        "dex": 29
+        "dex": 11
       },
       {
         "slot": "gloves",
@@ -65,7 +69,7 @@
           "dexPct": 4
         },
         "name": "柯拉凡雷恩護手 (+5)",
-        "attack": 15,
+        "attack": 19,
         "hp": 20,
         "str": 6,
         "dex": 6
@@ -132,9 +136,9 @@
         "additional": {},
         "name": "萬聖節躲貓貓達人勳章",
         "attack": 2,
-        "hp": 300,
-        "str": 3,
-        "dex": 3
+        "hp": 100,
+        "str": 5,
+        "dex": 5
       },
       {
         "slot": "face",
@@ -212,56 +216,85 @@
         "slot": "ring1",
         "enabled": true,
         "mergedStats": true,
-        "potential": {},
         "additional": {},
         "name": "冒險黑暗爆擊戒指",
         "attack": 3,
         "hp": 300,
+        "mp": 300,
         "str": 3,
         "dex": 3,
+        "int": 3,
+        "luk": 3,
         "critRate": 5,
-        "critDamage": 3
+        "critDamage": 3,
+        "potential": {}
       },
       {
         "slot": "ring2",
         "enabled": true,
         "mergedStats": true,
-        "potential": {},
         "additional": {},
-        "name": "天使祝福",
-        "attack": 5
+        "name": "守護拳套永恆之戒",
+        "str": 5,
+        "dex": 5,
+        "int": 6,
+        "luk": 4,
+        "pdef": 147,
+        "mdef": 55,
+        "evasion": 73,
+        "potential": {
+          "dexPct": 2,
+          "mp": 30,
+          "int": 4
+        }
       },
       {
         "slot": "ring3",
         "enabled": true,
         "mergedStats": true,
-        "potential": {},
         "additional": {},
-        "name": "白金十字戒指 (+2)",
-        "attack": 4,
-        "hp": 75,
-        "str": 4
+        "name": "博薩科之永恆之戒 (+2)",
+        "attack": 2,
+        "str": 6,
+        "dex": 4,
+        "int": 5,
+        "luk": 3,
+        "pdef": 28,
+        "mdef": 29,
+        "accuracy": 69,
+        "potential": {
+          "dexPct": 2,
+          "hp": 45
+        }
       },
       {
         "slot": "ring4",
         "enabled": true,
         "mergedStats": true,
-        "potential": {},
         "additional": {},
-        "name": "黃金十字戒指",
-        "attack": 1,
-        "hp": 50,
-        "str": 2,
-        "dex": 2
+        "name": "艾畢奈亞的戒指 (+2)",
+        "hp": 20,
+        "mp": 74,
+        "dex": 3,
+        "pdef": 45,
+        "mdef": 38,
+        "accuracy": 18,
+        "evasion": 13,
+        "potential": {
+          "dexPct": 2,
+          "mp": 45,
+          "dex": 2
+        }
       },
       {
         "slot": "earring",
         "enabled": true,
         "mergedStats": true,
         "potential": {
-          "dexPct": 6,
-          "str": 5,
-          "dex": 5
+          "dexPct": 9,
+          "str": 0,
+          "dex": 12,
+          "hp": 150
         },
         "additional": {
           "dexPct": 4
@@ -336,16 +369,34 @@
       },
       {
         "slot": "set",
-        "name": "柯拉凡雷恩套裝（4／5／6 件）",
+        "name": "柯拉凡雷恩套裝（4／5／6 件）＋不死的英雄組合（2 件）",
         "enabled": true,
         "mergedStats": true,
-        "str": 24,
-        "dex": 24,
-        "attack": 10,
+        "str": 39,
+        "dex": 39,
+        "attack": 20,
         "hpPct": 10,
         "ied": 30,
         "potential": {},
-        "additional": {}
+        "additional": {},
+        "setEffectSources": [
+          {
+            "name": "柯拉凡雷恩套裝（4／5／6 件）",
+            "attack": 10,
+            "str": 24,
+            "dex": 24,
+            "hpPct": 10,
+            "ied": 30
+          },
+          {
+            "name": "不死的英雄組合（2 件）",
+            "attack": 10,
+            "str": 15,
+            "dex": 15,
+            "int": 15,
+            "luk": 15
+          }
+        ]
       },
       {
         "slot": "pocket",
@@ -389,20 +440,52 @@
       {
         "name": "活力充沛飲料",
         "phase": "always",
-        "enabled": true,
+        "enabled": false,
         "attack": 25
       },
       {
         "name": "下級敏捷藥水",
         "phase": "always",
-        "enabled": true,
+        "enabled": false,
         "dex": 40
       },
       {
         "name": "下級體力秘藥",
         "phase": "always",
-        "enabled": true,
+        "enabled": false,
         "hp": 2000
+      },
+      {
+        "name": "幼年龍的離乳食",
+        "phase": "always",
+        "enabled": false,
+        "attack": 7
+      },
+      {
+        "name": "假火",
+        "phase": "always",
+        "enabled": false,
+        "hpPct": 40,
+        "attack": 0
+      },
+      {
+        "name": "下級祝福秘藥",
+        "phase": "always",
+        "enabled": false,
+        "str": 20,
+        "dex": 20
+      },
+      {
+        "name": "下級英雄秘藥",
+        "phase": "always",
+        "enabled": false,
+        "attack": 6
+      },
+      {
+        "name": "活動buff",
+        "phase": "always",
+        "enabled": false,
+        "attack": 30
       }
     ],
     "boss": {
@@ -462,15 +545,27 @@
       "measuredSkillPct": 195,
       "measuredCrit": "normal",
       "calibSet": true,
-      "customBosses": [],
+      "customBosses": [
+        {
+          "hp": 2650000000,
+          "pdr": 50,
+          "targets": 3
+        },
+        {
+          "hp": 330000000,
+          "pdr": 50,
+          "targets": 1
+        }
+      ],
       "fightSeconds": 60,
-      "rangeStat": "attack",
-      "rangeAmount": 0,
-      "recommendRotation": "best",
-      "opener": "burst",
+      "rangeStat": "dex",
+      "rangeAmount": 12,
+      "recommendRotation": "ab",
+      "opener": "charge",
       "completeBursts": "3",
-      "recommendPoints": "1",
-      "targetCount": 1
+      "recommendPoints": "2",
+      "targetCount": 5,
+      "rangeHpTarget": 23000
     },
     "baseline": null,
     "gearNote": "示範基礎數值，非本人實際裝備",
@@ -547,16 +642,17 @@
       "火繩槍劍專家": "30",
       "殘花": 10,
       "花力強化(紅)": 5,
-      "點花": "22",
-      "奧義．爆": "1",
-      "花力開放": "6",
+      "點花": 30,
+      "奧義．爆": "8",
+      "花力開放": "10",
       "黎明勇士": "29",
-      "火繩槍劍秘傳": "11",
+      "火繩槍劍秘傳": "30",
       "精靈的祝福": "18",
       "女皇的祝福": "16",
       "花尖": "20",
       "雙倍幸運骰子": "5",
-      "覺悟": "1"
+      "覺悟": "1",
+      "黎明之櫻": "1"
     },
     "jobSkillToggles": {
       "黎明勇士": true
