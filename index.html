@@ -41,6 +41,15 @@
 @media(max-width:640px){.gear-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.gear-board{padding:8px}.gear-slots{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(hover:hover) and (min-width:761px){.gear-touch-help{display:none}}
 @media(max-width:760px),(hover:none){.gear-hover-help{display:none}}
+
+.card-catalog-table{white-space:normal;table-layout:fixed}
+.card-catalog-table th:first-child{width:180px}
+.card-catalog-table th,.card-catalog-table td{text-align:left;vertical-align:middle}
+.card-catalog-table tbody th{position:static;background:transparent;color:var(--blue);font-size:13px}
+.card-catalog-table tbody tr:last-child th{border-bottom:0}
+.card-catalog-regions{display:flex;flex-wrap:wrap;gap:7px}
+.card-region{display:inline-block;padding:3px 10px;border:1px solid #344962;border-radius:7px;background:#14243b;white-space:nowrap;color:var(--text);font-size:13px}
+@media(max-width:640px){.card-catalog-table th:first-child{width:108px}.card-catalog-table th,.card-catalog-table td{padding:10px 9px}.card-catalog-regions{gap:6px}.card-region{padding:3px 7px;font-size:12px}}
 </style>
 </head>
 <body>
@@ -51,8 +60,33 @@
 <script>
 'use strict';
 const VERSION=5, KEY='ayame_lab_20261103_v2'; // 同一儲存鍵，保留 v3 設定
-const NAV=[['dashboard','📊','傷害總覽','傷害比較總覽','比較 A、B、A+B 的完整打王循環與傷害效率。'],['bossKill','⏱️','打王時間','Boss 擊殺時間','比較三種集花力打法的預估單人擊殺時間。'],['character','🎯','角色能力','角色基本能力','填入菖蒲的 DEX、STR、攻擊力、爆擊及其他常態能力。'],['equipment','🛡️','裝備配裝','裝備能力與套裝','逐件編輯裝備、潛能、卷軸及套裝加成，支援匯入參考套裝。'],['links','🔗','傳授技能','傳授技能配置','最多選擇三個傳授，依等級自動加入屬性。'],['jobSkills','📚','職業技能','菖蒲職業技能','依轉職階段查看技能。'],['buffs','🧪','藥水・Buff','增益與消耗品','加入常駐或僅爆發期間啟用的能力，並可快速切換。'],['skills','⚔️','技能與循環','技能倍率與動作時間','你錄影量測的出招速度與滿等技能倍率都可以修改。'],['boss','👑','Boss 與表攻','Boss 防禦與表攻預測','調整防禦率，核對預測最小與最大表攻，不使用校正係數。'],['method','📖','說明與驗證','使用說明與計算假設','了解公式、限制、版本差異，以及如何讓數字更準。']];
+const NAV=[['dashboard','📊','傷害總覽','傷害比較總覽','比較 A、B、A+B 的完整打王循環與傷害效率。'],['bossKill','⏱️','打王時間','Boss 擊殺時間','比較三種集花力打法的預估單人擊殺時間。'],['character','🎯','角色能力','角色基本能力','填入菖蒲的 DEX、STR、攻擊力、爆擊及其他常態能力。'],['equipment','🛡️','裝備配裝','裝備能力與套裝','逐件編輯裝備、潛能、卷軸及套裝加成，支援匯入參考套裝。'],['cardCatalog','🃏','卡片圖鑑','卡片圖鑑','查看各屬性分類與對應收集地區。'],['links','🔗','傳授技能','傳授技能配置','最多選擇三個傳授，依等級自動加入屬性。'],['jobSkills','📚','職業技能','菖蒲職業技能','依轉職階段查看技能。'],['buffs','🧪','藥水・Buff','增益與消耗品','加入常駐或僅爆發期間啟用的能力，並可快速切換。'],['skills','⚔️','技能與循環','技能倍率與動作時間','你錄影量測的出招速度與滿等技能倍率都可以修改。'],['boss','👑','Boss 與表攻','Boss 防禦與表攻預測','調整防禦率，核對預測最小與最大表攻，不使用校正係數。'],['method','📖','說明與驗證','使用說明與計算假設','了解公式、限制、版本差異，以及如何讓數字更準。']];
 const LINK={none:{name:'不裝備',effects:[]},boss:{name:'英雄／劍豪・Boss 傷害',effects:[{boss:2},{boss:4},{boss:6},{boss:8},{boss:10}]},ied:{name:'拳霸／重砲指揮官・無視防禦',effects:[{ied:3},{ied:6},{ied:9},{ied:12},{ied:15}]},atk:{name:'槍神／機甲戰神・物攻%',effects:[{atkPct:1},{atkPct:3},{atkPct:5},{atkPct:7},{atkPct:10}]},hpAtk:{name:'黑騎／狂狼勇士・物攻%',effects:[{atkPct:1},{atkPct:2},{atkPct:3},{atkPct:4},{atkPct:5}]},crit:{name:'箭神／狂豹獵人・爆率＋傷害',effects:[{critRate:1,damage:1},{critRate:2,damage:2},{critRate:4,damage:3},{critRate:6,damage:4},{critRate:8,damage:5}]},critMax:{name:'神射手／菖蒲・最大爆傷＋傷害',effects:[{critMax:1,damage:1},{critMax:3,damage:1},{critMax:5,damage:2},{critMax:7,damage:2},{critMax:6,damage:3}]}};
+const CARD_CATALOG_REGIONS=[
+ ['STR 力量',['勇士村']],
+ ['DEX 敏捷',['鯨魚號','弓手村']],
+ ['INT 智力',['魔法森林']],
+ ['LUK 幸運',['墮落']],
+ ['狀態異常抵抗',['奇幻村','靈藥']],
+ ['總傷害',['泰拉森林','破壞弓箭手村','新東京']],
+ ['爆擊機率',['獅子王城','地球防衛','西門町']],
+ ['BOSS 傷害',['黃金海岸','鐘塔下層','楓葉城']],
+ ['無視防禦率',['神木村','瑪迦提亞','騎士團要塞']],
+ ['物理／魔法攻擊力',['菇菇王國','廢棄礦坑','玩具城','桃花仙境']],
+ ['最大 HP',['耶雷佛','楓之島','維多利亞港','菇菇神社']],
+ ['最大 MP',['瑞恩','櫻花樹','雷本礦山']],
+ ['移動／跳躍力',['天空']],
+ ['全屬性',['克里賽','冰原','埃德爾斯坦','生命之穴','時間神殿']],
+ ['楓幣獲得量',['墮落廣場','童話村']],
+ ['道具掉落率',['水世界','沙漠','不夜城']],
+ ['爆擊傷害',['艾靈森林','阿里山','昭和村']]
+];
+function cardCatalogPage(){
+ return `<div class="panel"><h2>屬性分類與地區</h2><p class="desc">加成數值待補。</p>
+ <div class="tablewrap"><table class="card-catalog-table"><thead><tr><th scope="col">屬性分類</th><th scope="col">對應地區</th></tr></thead><tbody>
+ ${CARD_CATALOG_REGIONS.map(([category,regions])=>`<tr><th scope="row">${esc(category)}</th><td><div class="card-catalog-regions">${regions.map(region=>`<span class="card-region">${esc(region)}</span>`).join('')}</div></td></tr>`).join('')}
+ </tbody></table></div></div>`;
+}
 const STATS=['dex','str','attack','hp','dexPct','strPct','atkPct','hpPct','damage','boss','critRate','critDamage','critMax','ied','finalDamage'];
 const STAT_LABEL={dex:'DEX',str:'STR',attack:'物攻 +',hp:'最大 HP +',dexPct:'DEX %',strPct:'STR %',atkPct:'物攻 %',hpPct:'最大 HP %',allStatPct:'全屬性 %',damage:'傷害 %',boss:'Boss %',critRate:'爆擊率 %',critDamage:'平均額外爆傷 %',critMax:'最大爆傷 %',ied:'無視防禦 %',finalDamage:'最終傷害 %'};
 const sampleGear=[
@@ -1200,7 +1234,7 @@ function updateLivePreview(){
  for(const [i,set] of (state.equipmentSets||[]).entries()){const el=document.getElementById('gear-set-count-'+i);if(el)el.textContent='目前符合 '+state.equipment.filter(x=>x.enabled!==false&&x.slot!=='extra'&&String(x.name||'').trim()&&x.setName===set.name).length+' 件';}
  for(const [id,value] of Object.entries(items)){const el=document.getElementById(id);if(el)el.textContent=value;}
 }
-function render(){let n=NAV.find(x=>x[0]===tab);document.getElementById('pageTitle').textContent=n[3];document.getElementById('pageDesc').textContent=n[4];document.getElementById('nav').innerHTML=NAV.map(x=>`<button class="navbtn ${x[0]===tab?'active':''}" data-tab="${x[0]}"><span class="emoji">${x[1]}</span>${x[2]}</button>`).join('');let pages={dashboard,character,equipment,links:linkPage,jobSkills:jobSkillsPage,buffs:buffPage,skills:skillPage,bossKill:bossKillPage,boss:bossPage,method:methodPage};document.getElementById('view').innerHTML=pages[tab]();updateLivePreview();save();const editor=document.getElementById('gearEditor');if(editor){editor.showModal();editor.addEventListener('cancel',()=>{gearEditIndex=null;render()})}}
+function render(){let n=NAV.find(x=>x[0]===tab);document.getElementById('pageTitle').textContent=n[3];document.getElementById('pageDesc').textContent=n[4];document.getElementById('nav').innerHTML=NAV.map(x=>`<button class="navbtn ${x[0]===tab?'active':''}" data-tab="${x[0]}"><span class="emoji">${x[1]}</span>${x[2]}</button>`).join('');let pages={dashboard,character,equipment,cardCatalog:cardCatalogPage,links:linkPage,jobSkills:jobSkillsPage,buffs:buffPage,skills:skillPage,bossKill:bossKillPage,boss:bossPage,method:methodPage};document.getElementById('view').innerHTML=pages[tab]();updateLivePreview();save();const editor=document.getElementById('gearEditor');if(editor){editor.showModal();editor.addEventListener('cancel',()=>{gearEditIndex=null;render()})}}
 function toast(s){let t=document.getElementById('toast');t.textContent=s;t.style.display='block';clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(()=>t.style.display='none',3100)}
 function addGear(){state.equipment.push({name:'額外來源',slot:'extra',enabled:true,mergedStats:true})}
 function addBuff(phase){state.buffs.push({name:phase==='burst'?'爆發 Buff':'常駐藥水／Buff',phase,enabled:true})}
@@ -1367,4 +1401,5 @@ render();
 </script>
 </body>
 </html>
+
 
